@@ -1,0 +1,20 @@
+AWSTemplateFormatVersion: 2010-09-09
+Resources:
+  S3Bucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: !Sub access-logs-${AWS::AccountId}-${AWS::Region}
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - BucketKeyEnabled: true
+            ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      ObjectLockEnabled: true
+      ObjectLockConfiguration:
+          ObjectLockEnabled: Enabled
+          Rule: 
+            DefaultRetention:
+              Mode: GOVERNANCE
+              Days: 1
