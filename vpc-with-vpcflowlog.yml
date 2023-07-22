@@ -213,7 +213,7 @@ Resources:
             Action:
               - sts:AssumeRole
       Policies:
-        - PolicyName: test-vpc-flowlog-inline-policy
+        - PolicyName: allow-cloudwatch-logs-output
           PolicyDocument:
             Version: "2012-10-17"
             Statement:

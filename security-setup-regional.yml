@@ -1,0 +1,38 @@
+AWSTemplateFormatVersion: 2010-09-09
+Conditions:
+  IsUsEast1: !Equals [!Ref AWS::Region, "us-east-1"]
+Resources:
+  ConfigRecorder:
+    Type: AWS::Config::ConfigurationRecorder
+    Properties:
+      Name: default
+      RecordingGroup:
+        AllSupported: true
+        IncludeGlobalResourceTypes: !If [IsUsEast1, true, false]
+      RoleARN: !ImportValue ConfigRoleArn
+  DeliveryChannel:
+    Type: AWS::Config::DeliveryChannel
+    Properties:
+      Name: default
+      ConfigSnapshotDeliveryProperties:
+        DeliveryFrequency: Six_Hours
+      S3BucketName: !ImportValue ConfigBucket
+      SnsTopicARN: !Ref ConfigTopic
+  ConfigTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: config-topic
+  ConfigTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      PolicyDocument:
+        Id: ConfigTopicPolicy
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: config.amazonaws.com
+            Action: SNS:Publish
+            Resource: "*"
+      Topics:
+        - !Ref ConfigTopic

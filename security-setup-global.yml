@@ -1,0 +1,63 @@
+AWSTemplateFormatVersion: 2010-09-09
+Resources:
+  ConfigBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: !Sub aws-config-${AWS::AccountId}-${AWS::Region}
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - BucketKeyEnabled: true
+            ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      ObjectLockEnabled: true
+      ObjectLockConfiguration:
+          ObjectLockEnabled: Enabled
+          Rule: 
+            DefaultRetention:
+              Mode: GOVERNANCE
+              Days: 1
+  ConfigRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+              - config.amazonaws.com
+          Action: 
+            - sts:AssumeRole
+      ManagedPolicyArns: 
+        - arn:aws:iam::aws:policy/service-role/AWS_ConfigRole
+      Policies:
+      - PolicyName: root
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action: s3:GetBucketAcl
+            Resource: !Join ['', ['arn:aws:s3:::', !Ref 'ConfigBucket']]
+          - Effect: Allow
+            Action: s3:PutObject
+            Resource: !Join ['', ['arn:aws:s3:::', !Ref 'ConfigBucket', /AWSLogs/,
+                !Ref 'AWS::AccountId', /*]]
+            Condition:
+              StringEquals:
+                s3:x-amz-acl: bucket-owner-full-control
+          - Effect: Allow
+            Action: config:Put*
+            Resource: '*'
+Outputs:
+  ConfigRoleArn:
+    Description: Role arn for AWS Config
+    Value: !GetAtt ConfigRole.Arn
+    Export:
+      Name: ConfigRoleArn
+  ConfigBucket:
+    Description: S3 Bucket for AWS Config
+    Value: !Ref ConfigBucket
+    Export:
+      Name: ConfigBucket
