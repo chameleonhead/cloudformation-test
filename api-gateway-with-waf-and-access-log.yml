@@ -127,6 +127,44 @@ Resources:
       RestApiId: !Ref GreetingApi
       MethodResponses:
         - StatusCode: "200"
+  # based on https://github.com/aws-samples/wafv2-json-yaml-samples/blob/master/YAML/webacl-create-001.yaml
+  WafAcl:
+    Type: AWS::WAFv2::WebACL
+    Properties:
+      Name: WebACLWithAMR
+      Scope: REGIONAL
+      Description: !Sub Web ACL for web api ${GreetingApi}
+      DefaultAction: 
+        Block: {}
+      VisibilityConfig:
+        SampledRequestsEnabled: true
+        CloudWatchMetricsEnabled: true
+        MetricName: MetricForWebACLWithAMR
+      Tags:
+        - Key: sampleapple
+          Value: sampleorange
+      Rules: 
+        - Name: AWS-AWSManagedRulesCommonRuleSet
+          Priority: 0
+          OverrideAction:
+            None: {}
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: MetricForAMRCRS
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: AWSManagedRulesCommonRuleSet
+              ExcludedRules:
+                - Name: NoUserAgent_HEADER
+  WebAclAssociation:
+    Type: AWS::WAFv2::WebACLAssociation
+    Properties: 
+      ResourceArn: !Sub arn:aws:apigateway:${AWS::Region}::/restapis/${GreetingApi}/stages/LATEST
+      WebACLArn: !GetAtt WafAcl.Arn
+
+        
 Outputs:
   # can access lambda with path: /DummyStage/greeting
   RootUrl:
