@@ -1,4 +1,11 @@
 AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  ConfigRole:
+    Description: Role name for AWS Config
+    Type: String
+  ConfigBucket:
+    Description: S3 Bucket for AWS Config
+    Type: String
 Conditions:
   IsUsEast1: !Equals [!Ref AWS::Region, "us-east-1"]
 Resources:
@@ -9,14 +16,14 @@ Resources:
       RecordingGroup:
         AllSupported: true
         IncludeGlobalResourceTypes: !If [IsUsEast1, true, false]
-      RoleARN: !ImportValue ConfigRoleArn
+      RoleARN: !Sub arn:aws:iam::${AWS::AccountId}:role/${ConfigRole}
   DeliveryChannel:
     Type: AWS::Config::DeliveryChannel
     Properties:
       Name: default
       ConfigSnapshotDeliveryProperties:
         DeliveryFrequency: Six_Hours
-      S3BucketName: !ImportValue ConfigBucket
+      S3BucketName: !Ref ConfigBucket
       SnsTopicARN: !Ref ConfigTopic
   ConfigTopic:
     Type: AWS::SNS::Topic

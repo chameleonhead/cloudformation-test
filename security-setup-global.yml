@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: 2010-09-09
 Resources:
   ConfigBucket:
-    Type: 'AWS::S3::Bucket'
+    Type: AWS::S3::Bucket
     Properties:
       BucketName: !Sub aws-config-${AWS::AccountId}-${AWS::Region}
       VersioningConfiguration:
@@ -11,45 +11,65 @@ Resources:
           - BucketKeyEnabled: true
             ServerSideEncryptionByDefault:
               SSEAlgorithm: AES256
-      ObjectLockEnabled: true
-      ObjectLockConfiguration:
-          ObjectLockEnabled: Enabled
-          Rule: 
-            DefaultRetention:
-              Mode: GOVERNANCE
-              Days: 1
+  ConfigBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ConfigBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AWSConfigBucketPermissionsCheck
+            Effect: Allow
+            Principal:
+              Service: config.amazonaws.com
+            Action: s3:GetBucketAcl
+            Resource: !Sub arn:aws:s3:::${ConfigBucket}
+          - Sid: AWSConfigBucketExistenceCheck
+            Effect: Allow
+            Principal:
+              Service: config.amazonaws.com
+            Action: s3:ListBucket
+            Resource: !Sub arn:aws:s3:::${ConfigBucket}
+          - Sid: AWSConfigBucketDelivery
+            Effect: Allow
+            Principal:
+              Service: config.amazonaws.com
+            Action: s3:PutObject
+            Resource: !Sub arn:aws:s3:::${ConfigBucket}/AWSLogs/${AWS::AccountId}/*
   ConfigRole:
     Type: AWS::IAM::Role
     Properties:
+      RoleName: config-role
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
-        - Effect: Allow
-          Principal:
-            Service:
-              - config.amazonaws.com
-          Action: 
-            - sts:AssumeRole
-      ManagedPolicyArns: 
+          - Effect: Allow
+            Principal:
+              Service:
+                - config.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWS_ConfigRole
       Policies:
-      - PolicyName: root
-        PolicyDocument:
-          Version: '2012-10-17'
-          Statement:
-          - Effect: Allow
-            Action: s3:GetBucketAcl
-            Resource: !Join ['', ['arn:aws:s3:::', !Ref 'ConfigBucket']]
-          - Effect: Allow
-            Action: s3:PutObject
-            Resource: !Join ['', ['arn:aws:s3:::', !Ref 'ConfigBucket', /AWSLogs/,
-                !Ref 'AWS::AccountId', /*]]
-            Condition:
-              StringEquals:
-                s3:x-amz-acl: bucket-owner-full-control
-          - Effect: Allow
-            Action: config:Put*
-            Resource: '*'
+        - PolicyName: root
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                  - s3:GetBucketAcl
+                Resource: !Sub arn:aws:s3:::${ConfigBucket}
+              - Effect: Allow
+                Action: s3:PutObject
+                Resource: !Sub arn:aws:s3:::${ConfigBucket}/AWSLogs/${AWS::AccountId}/*
+              - Effect: Allow
+                Action: config:Put*
+                Resource: "*"
+              - Effect: Allow
+                Action: sns:Publish
+                Resource: "*"
 Outputs:
   ConfigRoleArn:
     Description: Role arn for AWS Config
