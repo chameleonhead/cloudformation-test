@@ -40,7 +40,7 @@ Resources:
             Principal:
               Service: config.amazonaws.com
             Action: SNS:Publish
-            Resource: "*"
+            Resource: !Ref ConfigTopic
       Topics:
         - !Ref ConfigTopic
 
@@ -49,3 +49,83 @@ Resources:
       Properties:
           Enable: True
           FindingPublishingFrequency: FIFTEEN_MINUTES
+
+  GuardDutyTopic:
+    Type: AWS::SNS::Topic
+    Properties: 
+      TopicName: guardduty-topic
+
+  GuardDutyTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties: 
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action: sns:Publish
+            Resource: !Ref GuardDutyTopic
+      Topics:
+        - !Ref GuardDutyTopic
+
+  GuardDutyEventRule:
+    Type: AWS::Events::Rule
+    Properties: 
+      EventPattern: 
+        source: 
+          - aws.guardduty
+        detail-type: 
+          - 'GuardDuty Finding'
+        detail: 
+          severity:
+            - 7
+            - 7.0
+            - 7.1
+            - 7.2
+            - 7.3
+            - 7.4
+            - 7.5
+            - 7.6
+            - 7.7
+            - 7.8
+            - 7.9
+            - 8
+            - 8.0
+            - 8.1
+            - 8.2
+            - 8.3
+            - 8.4
+            - 8.5
+            - 8.6
+            - 8.7
+            - 8.8
+            - 8.9
+      Name: guardduty-event
+      State: ENABLED
+      Targets: 
+        - Arn: !Ref GuardDutyTopic
+          Id: guardduty-event
+          InputTransformer: 
+            InputPathsMap: 
+              'severity': '$.detail.severity'
+              'Account_ID': '$.detail.accountId'
+              'Finding_ID': '$.detail.id'
+              'Finding_Type': '$.detail.type'
+              'region': '$.region'
+              'time': '$.time'
+              'Finding_description': '$.detail.description'
+            InputTemplate: |
+              "AWSアカウント：<Account_ID> で重要度：<severity> のイベントが検出されました。"
+              "検出時間：<time>"
+              "検出タイプ：<Finding_Type>"
+              "リージョン：<region>"
+              "検出タイプ説明：<Finding_description>."
+              "マネジメントコンソールから詳細をご確認ください。https://console.aws.amazon.com/guardduty/home?region=<region>#/findings?search=id=<Finding_ID>"
+
+  SecurityHub:
+      Type: AWS::SecurityHub::Hub
+      Properties:
+        Tags:
+          key1: value1
+          key2: value2

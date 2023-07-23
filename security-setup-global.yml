@@ -147,7 +147,7 @@ Resources:
             Principal:
               Service: cloudtrail.amazonaws.com
             Action: SNS:Publish
-            Resource: "*"
+            Resource: !Ref TrailTopic
       Topics:
         - !Ref TrailTopic
 
