@@ -7,6 +7,14 @@
     {
         "ParameterKey": "ConfigBucket",
         "ParameterValue": "aws-config-298421060669-ap-northeast-1"
+    },
+    {
+      "ParameterKey": "TrailToCloudWatchWriteRole",
+      "ParameterValue": "trail-to-cloudwatch-logs-role"
+    },
+    {
+        "ParameterKey": "TrailBucket",
+        "ParameterValue": "cloudtrail-298421060669-ap-northeast-1"
     }
   ],
   "Capabilities": ["CAPABILITY_NAMED_IAM"]

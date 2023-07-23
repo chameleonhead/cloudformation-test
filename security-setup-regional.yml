@@ -6,6 +6,12 @@ Parameters:
   ConfigBucket:
     Description: S3 Bucket for AWS Config
     Type: String
+  TrailToCloudWatchWriteRole:
+    Description: Role name for AWS Cloudtrail
+    Type: String
+  TrailBucket:
+    Description: S3 Bucket for AWS Cloudtrail
+    Type: String
 Conditions:
   IsUsEast1: !Equals [!Ref AWS::Region, "us-east-1"]
 Resources:
@@ -43,6 +49,70 @@ Resources:
             Resource: !Ref ConfigTopic
       Topics:
         - !Ref ConfigTopic
+
+  TrailLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub aws-cloudtrail-logs-${AWS::AccountId}-default
+      RetentionInDays: 1
+
+  Trail:
+    Type: AWS::CloudTrail::Trail
+    Properties:
+      TrailName: default
+      S3BucketName: !Ref TrailBucket
+      EnableLogFileValidation: true
+      CloudWatchLogsLogGroupArn: !GetAtt TrailLogGroup.Arn
+      CloudWatchLogsRoleArn: !Sub arn:aws:iam::${AWS::AccountId}:role/${TrailToCloudWatchWriteRole}
+      IsLogging: true
+      IncludeGlobalServiceEvents: !If [IsUsEast1, true, false]
+      Tags:
+        - Key: "TagKeyIntTest"
+          Value: "TagValueIntTest"
+        - Key: "TagKeyIntTest2"
+          Value: "TagValueIntTest2"
+      AdvancedEventSelectors:
+        - FieldSelectors:
+            - Field: eventCategory
+              Equals:
+                - Management
+        - FieldSelectors:
+            - Field: eventCategory
+              Equals:
+                - Data
+            - Field: resources.type
+              Equals:
+                - "AWS::Cognito::IdentityPool"
+        - FieldSelectors:
+            - Field: eventCategory
+              Equals:
+                - Data
+            - Field: resources.type
+              Equals:
+                - "AWS::Lambda::Function"
+        - FieldSelectors:
+            - Field: eventCategory
+              Equals:
+                - Data
+            - Field: resources.type
+              Equals:
+                - "AWS::S3::Object"
+            - Field: resources.ARN
+              NotStartsWith:
+                - !Sub arn:aws:s3:::${TrailBucket}/
+        - FieldSelectors:
+            - Field: eventCategory
+              Equals:
+                - Data
+            - Field: resources.type
+              Equals:
+                - "AWS::S3::Object"
+            - Field: resources.ARN
+              StartsWith:
+                - !Sub arn:aws:s3:::${TrailBucket}/
+            - Field: readOnly
+              Equals:
+                - "true"
 
   GuardDutyDetector:
       Type: AWS::GuardDuty::Detector
