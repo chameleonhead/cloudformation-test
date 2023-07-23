@@ -132,25 +132,6 @@ Resources:
                 Resource:
                   - !Sub arn:aws:logs:*:${AWS::AccountId}:log-group:*
 
-  TrailTopic:
-    Type: AWS::SNS::Topic
-    Properties:
-      TopicName: trail-topic
-  TrailTopicPolicy:
-    Type: AWS::SNS::TopicPolicy
-    Properties:
-      PolicyDocument:
-        Id: TrailTopicPolicy
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: cloudtrail.amazonaws.com
-            Action: SNS:Publish
-            Resource: !Ref TrailTopic
-      Topics:
-        - !Ref TrailTopic
-
   TrailLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -163,7 +144,6 @@ Resources:
       TrailName: default
       S3BucketName: !Ref TrailBucket
       EnableLogFileValidation: true
-      SnsTopicName: trail-topic
       CloudWatchLogsLogGroupArn: !GetAtt TrailLogGroup.Arn
       CloudWatchLogsRoleArn: !GetAtt TrailToCloudWatchWriteRole.Arn
       IsLogging: true
@@ -181,7 +161,7 @@ Resources:
                 - Data
             - Field: resources.type
               Equals:
-                - "AWS::S3::Object"
+                - "AWS::Cognito::IdentityPool"
         - FieldSelectors:
             - Field: eventCategory
               Equals:
@@ -195,4 +175,20 @@ Resources:
                 - Data
             - Field: resources.type
               Equals:
-                - "AWS::Cognito::IdentityPool"
+                - "AWS::S3::Object"
+            - Field: resources.ARN
+              NotStartsWith:
+                - !Sub arn:aws:s3:::${TrailBucket}/
+        - FieldSelectors:
+            - Field: eventCategory
+              Equals:
+                - Data
+            - Field: resources.type
+              Equals:
+                - "AWS::S3::Object"
+            - Field: resources.ARN
+              StartsWith:
+                - !Sub arn:aws:s3:::${TrailBucket}/
+            - Field: readOnly
+              Equals:
+                - "true"
