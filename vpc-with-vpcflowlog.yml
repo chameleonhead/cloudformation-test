@@ -250,6 +250,8 @@ Resources:
       BucketName: !Sub vpc-logs-${AWS::AccountId}-${AWS::Region}
       VersioningConfiguration:
         Status: Enabled
+      LoggingConfiguration:
+        DestinationBucketName: !Sub access-logs-${AWS::AccountId}-${AWS::Region}
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - BucketKeyEnabled: true
