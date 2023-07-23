@@ -43,3 +43,9 @@ Resources:
             Resource: "*"
       Topics:
         - !Ref ConfigTopic
+
+  GuardDutyDetector:
+      Type: AWS::GuardDuty::Detector
+      Properties:
+          Enable: True
+          FindingPublishingFrequency: FIFTEEN_MINUTES
