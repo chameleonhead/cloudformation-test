@@ -36,6 +36,17 @@ Resources:
               Service: config.amazonaws.com
             Action: s3:PutObject
             Resource: !Sub arn:aws:s3:::${ConfigBucket}/AWSLogs/${AWS::AccountId}/*
+          # AWS Foundational Security Best Practices v1.0.0 S3.5
+          - Sid: AllowSSLRequestsOnly
+            Effect: Deny
+            Principal: '*'
+            Action: 's3:*'
+            Resource:
+              - !GetAtt 'ConfigBucket.Arn'
+              - !Sub '${ConfigBucket.Arn}/*'
+            Condition:
+              Bool:
+                'aws:SecureTransport': false
   ConfigRole:
     Type: AWS::IAM::Role
     Properties:
@@ -106,6 +117,17 @@ Resources:
               Service: cloudtrail.amazonaws.com
             Action: "s3:PutObject"
             Resource: !Sub arn:aws:s3:::${TrailBucket}/*
+          # AWS Foundational Security Best Practices v1.0.0 S3.5
+          - Sid: AllowSSLRequestsOnly
+            Effect: Deny
+            Principal: '*'
+            Action: 's3:*'
+            Resource:
+            - !GetAtt 'TrailBucket.Arn'
+            - !Sub '${TrailBucket.Arn}/*'
+            Condition:
+              Bool:
+                'aws:SecureTransport': false
 
   TrailToCloudWatchWriteRole:
     Type: AWS::IAM::Role
@@ -155,6 +177,10 @@ Resources:
         - Key: "TagKeyIntTest2"
           Value: "TagValueIntTest2"
       AdvancedEventSelectors:
+        - FieldSelectors:
+            - Field: eventCategory
+              Equals:
+                - Management
         - FieldSelectors:
             - Field: eventCategory
               Equals:
