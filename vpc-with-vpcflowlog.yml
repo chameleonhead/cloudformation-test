@@ -244,6 +244,59 @@ Resources:
       LogGroupName: !Sub /aws/vpcflowlog/vpc/${VPC}
       RetentionInDays: 1
 
+  VpcLogBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: !Sub vpc-logs-${AWS::AccountId}-${AWS::Region}
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - BucketKeyEnabled: true
+            ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      ObjectLockEnabled: true
+      ObjectLockConfiguration:
+          ObjectLockEnabled: Enabled
+          Rule: 
+            DefaultRetention:
+              Mode: GOVERNANCE
+              Days: 1
+
+  VpcLogBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref VpcLogBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: logging.s3.amazonaws.com
+            Action: "s3:PutObject"
+            Resource: !Sub arn:aws:s3:::${VpcLogBucket}/*
+          # AWS Foundational Security Best Practices v1.0.0 S3.5
+          - Sid: AllowSSLRequestsOnly
+            Effect: Deny
+            Principal: '*'
+            Action: 's3:*'
+            Resource:
+            - !GetAtt 'VpcLogBucket.Arn'
+            - !Sub '${VpcLogBucket.Arn}/*'
+            Condition:
+              Bool:
+                'aws:SecureTransport': false
+  VpcFlowLogS3:
+    Type: AWS::EC2::FlowLog
+    Properties:
+      ResourceType: VPC
+      ResourceId: !Ref VPC
+      TrafficType: ALL
+      MaxAggregationInterval: 600
+      LogDestinationType: s3
+      LogDestination: !Sub arn:aws:s3:::${VpcLogBucket}/
+      LogFormat: ${version} ${account-id} ${interface-id} ${srcaddr} ${dstaddr} ${srcport} ${dstport} ${protocol} ${packets} ${bytes} ${start} ${end} ${action} ${log-status} ${vpc-id} ${subnet-id} ${instance-id} ${tcp-flags} ${type} ${pkt-srcaddr} ${pkt-dstaddr} ${region} ${az-id} ${sublocation-type} ${sublocation-id} ${pkt-src-aws-service} ${pkt-dst-aws-service} ${flow-direction} ${traffic-path}
+
 Outputs:
   VPC:
     Description: A reference to the created VPC
