@@ -1,0 +1,12 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Resources:
+  DNS:
+    Type: "AWS::Route53::HostedZone"
+    Properties:
+      HostedZoneConfig:
+        Comment: "My hosted zone for subdomain.waitinglist.link"
+      Name: "subdomain.waitinglist.link"
+
+Outputs:
+  NameServers:
+    Value: !Join [",", !GetAtt DNS.NameServers]
