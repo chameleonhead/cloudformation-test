@@ -5,6 +5,9 @@ Resources:
     Properties:
       HostedZoneConfig:
         Comment: "My hosted zone for subdomain.waitinglist.link"
+      HostedZoneTags:
+        - Key: Name
+          Value: TestValue
       Name: "subdomain.waitinglist.link"
 
 Outputs:
