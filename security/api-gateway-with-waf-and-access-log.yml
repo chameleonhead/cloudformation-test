@@ -47,57 +47,13 @@ Resources:
       FunctionName: !GetAtt GreetingLambda.Arn
       Principal: apigateway.amazonaws.com
       SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${GreetingApi}/*
-  ApiGatewayCloudWatchLogsRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - apigateway.amazonaws.com
-            Action:
-              - sts:AssumeRole
-      Policies:
-        - PolicyName: ApiGatewayLogsPolicy
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: Allow
-                Action:
-                  - logs:CreateLogGroup
-                  - logs:CreateLogStream
-                  - logs:DescribeLogGroups
-                  - logs:DescribeLogStreams
-                  - logs:PutLogEvents
-                  - logs:GetLogEvents
-                  - logs:FilterLogEvents
-                Resource: "*"
-  ApiGatewayAccount:
-    Type: AWS::ApiGateway::Account
-    Properties:
-      CloudWatchRoleArn: !GetAtt ApiGatewayCloudWatchLogsRole.Arn
-  GreetingApiStage:
-    DependsOn:
-      - ApiGatewayAccount
-    Type: AWS::ApiGateway::Stage
-    Properties:
-      DeploymentId: !Ref ApiDeployment
-      MethodSettings:
-        - DataTraceEnabled: true
-          HttpMethod: "*"
-          LoggingLevel: INFO
-          ResourcePath: "/*"
-      RestApiId: !Ref GreetingApi
-      StageName: LATEST
   ApiDeployment:
     Type: AWS::ApiGateway::Deployment
     DependsOn:
       - GreetingRequest
     Properties:
       RestApiId: !Ref GreetingApi
-      StageName: DummyStage
+      StageName: prod
   GreetingResource:
     Type: AWS::ApiGateway::Resource
     Properties:
@@ -203,13 +159,46 @@ Resources:
         MetricName: !Sub DefaultWebAcl-${AWS::Region}
 
   WebAclAssociation:
+    DependsOn:
+     - ApiDeployment
     Type: AWS::WAFv2::WebACLAssociation
     Properties: 
-      ResourceArn: !Sub arn:aws:apigateway:${AWS::Region}::/restapis/${GreetingApi}/stages/LATEST
+      ResourceArn: !Sub arn:aws:apigateway:${AWS::Region}::/restapis/${GreetingApi}/stages/prod
       WebACLArn: !GetAtt WafAcl.Arn
-   
+  
+  DomainName:
+    Type: AWS::ApiGateway::DomainName
+    Properties:
+      RegionalCertificateArn: !Ref Certificate
+      DomainName: certtest.fishing-logger.com
+      EndpointConfiguration: 
+        Types:
+          - REGIONAL
+      SecurityPolicy: TLS_1_2
+      Tags: 
+        - Key: Name
+          Value: TestValue
+
+  Certificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      CertificateTransparencyLoggingPreference: DISABLED
+      DomainName: certtest.fishing-logger.com
+      DomainValidationOptions:
+        - DomainName: certtest.fishing-logger.com
+          ValidationDomain: fishing-logger.com
+      ValidationMethod: DNS
+
+  BasePathMapping:
+    Type: "AWS::ApiGateway::BasePathMapping"
+    Properties:
+      BasePath: prod
+      DomainName: !Ref DomainName
+      RestApiId: !Ref GreetingApi
+      Stage: prod
+
 Outputs:
-  # can access lambda with path: /DummyStage/greeting
+  # can access lambda with path: /prod/greeting
   RootUrl:
     Description: Root URL of the API gateway
     Value: !Sub https://${GreetingApi}.execute-api.${AWS::Region}.amazonaws.com
