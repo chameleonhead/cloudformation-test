@@ -51,9 +51,15 @@ Resources:
     Type: AWS::ApiGateway::Deployment
     DependsOn:
       - GreetingRequest
+      - LogGroup
     Properties:
       RestApiId: !Ref GreetingApi
       StageName: prod
+      StageDescription:
+        AccessLogSetting: 
+          DestinationArn: !GetAtt LogGroup.Arn
+          Format: |
+            { "requestId":"$context.requestId", "ip": "$context.identity.sourceIp", "caller":"$context.identity.caller", "user":"$context.identity.user","requestTime":"$context.requestTime", "httpMethod":"$context.httpMethod","resourcePath":"$context.resourcePath", "status":"$context.status","protocol":"$context.protocol", "responseLength":"$context.responseLength" }
   GreetingResource:
     Type: AWS::ApiGateway::Resource
     Properties:
@@ -196,6 +202,40 @@ Resources:
       DomainName: !Ref DomainName
       RestApiId: !Ref GreetingApi
       Stage: prod
+
+  ApiGatewayCloudWatchLogsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - apigateway.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs
+
+  ApiGatewayAccount:
+    DependsOn:
+     - LogGroupWelcome
+    Type: AWS::ApiGateway::Account
+    Properties:
+      CloudWatchRoleArn: !GetAtt ApiGatewayCloudWatchLogsRole.Arn
+
+  LogGroupWelcome:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/apigateway/welcome
+      RetentionInDays: 730
+
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/apigateway/restapis/${GreetingApi}/stages/prod
+      RetentionInDays: 730
 
 Outputs:
   # can access lambda with path: /prod/greeting
