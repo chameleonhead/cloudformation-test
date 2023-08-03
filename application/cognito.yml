@@ -39,4 +39,11 @@ Resources:
     Type: AWS::Cognito::UserPoolDomain
     Properties:
       UserPoolId: !Ref Cognito
-      Domain: !Sub test-user-pool-domain-${AWS::AccountId}
+      Domain: auth.certtest.fishing-logger.com
+      CustomDomainConfig:
+        CertificateArn: '{{resolve:ssm:/certs/auth.certtest.fishing-logger.com}}'
+
+Outputs:
+  CognitoUserPoolAliasTarget:
+    Value: !GetAtt CognitoDomain.CloudFrontDistribution
+    Description: "Cognito User Pool Alias Target"
