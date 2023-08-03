@@ -81,7 +81,7 @@ Resources:
       - CertificateArnToSsmLambda
     Type: AWS::CertificateManager::Certificate
     Properties:
-      CertificateTransparencyLoggingPreference: DISABLED
+      CertificateTransparencyLoggingPreference: ENABLED
       DomainName: auth.certtest.fishing-logger.com
       DomainValidationOptions:
         - DomainName: auth.certtest.fishing-logger.com
