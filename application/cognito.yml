@@ -1,0 +1,42 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Resources:
+  Cognito:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: test-user-pool
+      UsernameAttributes:
+        - email
+      AutoVerifiedAttributes:
+        - email
+      MfaConfiguration: "OFF"
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: true
+        InviteMessageTemplate:
+          EmailSubject: "Your invitation to join {{userPoolName}}"
+          EmailMessage: "Your username is {username} and temporary password is {####}."
+
+  CognitoClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: test-user-pool-client
+      UserPoolId: !Ref Cognito
+      CallbackURLs:
+        - https://certtest.fishing-logger.com
+      LogoutURLs:
+        - https://certtest.fishing-logger.com
+      AllowedOAuthFlowsUserPoolClient: true
+      ExplicitAuthFlows:
+        - ADMIN_NO_SRP_AUTH
+      AllowedOAuthFlows:
+        - code
+      AllowedOAuthScopes:
+        - openid
+        - profile
+      SupportedIdentityProviders:
+        - COGNITO
+
+  CognitoDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      UserPoolId: !Ref Cognito
+      Domain: !Sub test-user-pool-domain-${AWS::AccountId}
