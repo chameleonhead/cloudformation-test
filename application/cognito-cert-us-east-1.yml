@@ -1,0 +1,99 @@
+# https://docs.aws.amazon.com/ja_jp/prescriptive-guidance/latest/patterns/enable-amazon-guardduty-conditionally-by-using-aws-cloudformation-templates.html
+# https://docs.aws.amazon.com/ja_jp/AWSCloudFormation/latest/UserGuide/cfn-lambda-function-code-cfnresponsemodule.html
+AWSTemplateFormatVersion: "2010-09-09"
+Description: AWS CloudFormation sample template that contains a single Lambda function behind an API Gateway
+Resources:
+  CertificateArnToSsmLambdaLogGroup:
+    Type: "AWS::Logs::LogGroup"
+    DeletionPolicy: Delete
+    Properties:
+      RetentionInDays: 7
+      LogGroupName: /aws/lambda/test-certificate-arn-to-ssm
+  CertificateArnToSsmLambda:
+    DependsOn:
+      - CertificateArnToSsmLambdaLogGroup
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: Checks for resource type enabled and possibly name to exist
+      FunctionName: test-certificate-arn-to-ssm
+      Handler: index.lambda_handler
+      Role: !GetAtt CertificateArnToSsmLambdaExecutionRole.Arn
+      Runtime: python3.8
+      MemorySize: 128
+      Timeout: 180
+      Code:
+        ZipFile: |
+          import boto3
+          import cfnresponse
+
+          def lambda_handler(event, context):
+              print('Event: ', event)
+              if 'RequestType' in event:
+                ssm = boto3.client('ssm', region_name=event['ResourceProperties']['Region'])
+
+                if event['RequestType'] in ["Create","Update"]:
+                    try:
+                      response = ssm.put_parameter(
+                        Name=event['ResourceProperties']['Name'],
+                        Description=event['ResourceProperties']['Description'],
+                        Value=event['ResourceProperties']['Value'],
+                        Type='String',
+                        Overwrite=True,
+                      )
+                    except Exception as e:
+                        print("Exception: ",e)
+                    cfnresponse.send(event, context, cfnresponse.SUCCESS, {}, event['ResourceProperties']['Name'])
+                elif event['RequestType'] == "Delete":
+                    try:
+                      response = ssm.delete_parameter(
+                        Name=event['ResourceProperties']['Name'],
+                      )
+                    except Exception as e:
+                        print("Exception: ",e)
+                    cfnresponse.send(event, context, cfnresponse.SUCCESS, {}, event['ResourceProperties']['Name'])
+  CertificateArnToSsmLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: certificate-to-ssm-policy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "ssm:PutParameter"
+                  - "ssm:DeleteParameter"
+                Resource: "*"
+
+  Certificate:
+    DependsOn:
+      - CertificateArnToSsmLambda
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      CertificateTransparencyLoggingPreference: DISABLED
+      DomainName: auth.certtest.fishing-logger.com
+      DomainValidationOptions:
+        - DomainName: auth.certtest.fishing-logger.com
+          ValidationDomain: fishing-logger.com
+      ValidationMethod: DNS
+
+  SsmParameter:
+    Type: "AWS::CloudFormation::CustomResource"
+    Properties:
+      ServiceToken: !GetAtt CertificateArnToSsmLambda.Arn
+      Region: ap-northeast-1
+      Description: Description
+      Name: /certs/auth.certtest.fishing-logger.com
+      Type: String
+      Value: !Ref Certificate
