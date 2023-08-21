@@ -1,3 +1,5 @@
+# https://docs.aws.amazon.com/vpc/latest/userguide/vpc-cidr-blocks.html#add-cidr-block-restrictions
+
 AWSTemplateFormatVersion: 2010-09-09
 
 Parameters:
@@ -8,26 +10,6 @@ Parameters:
   VpcCIDR:
     Type: String
     Default: 10.0.0.0/16
-    
-  VpcIntraCIDR:
-    Type: String
-    Default: 172.17.2.0/24
-
-  IntraSubnet1AZ1CIDR:
-    Type: String
-    Default: 172.17.2.0/28
-
-  IntraSubnet1AZ2CIDR:
-    Type: String
-    Default: 172.17.2.16/28
-
-  IntraSubnet2AZ1CIDR:
-    Type: String
-    Default: 172.17.2.128/27
-
-  IntraSubnet2AZ2CIDR:
-    Type: String
-    Default: 172.17.2.160/27
 
   Subnet1AZ1CIDR:
     Type: String
@@ -45,10 +27,6 @@ Parameters:
     Type: String
     Default: 10.0.3.0/24
 
-  # OggInstanceIPAddress:
-  #   Type: String
-  #   Default: 
-
 Resources:
   VPC:
     Type: AWS::EC2::VPC
@@ -60,56 +38,6 @@ Resources:
         - Key: Name
           Value: !Sub ${VpcName}-${AWS::Region}
 
-  VpcIntraCidrBlock:
-    Type: AWS::EC2::VPCCidrBlock
-    Properties:
-      VpcId: !Ref VPC
-      CidrBlock: !Ref VpcIntraCIDR
-
-  IntraSubnet1AZ1:
-    Type: AWS::EC2::Subnet
-    Properties:
-      VpcId: !Ref VPC
-      AvailabilityZone: !Select [0, !GetAZs ""]
-      CidrBlock: !Ref IntraSubnet1AZ1CIDR
-      MapPublicIpOnLaunch: false
-      Tags:
-        - Key: Name
-          Value: ${VpcName}-intra-subnet1az1-${AWS::Region}
-
-  IntraSubnet1AZ2:
-    Type: AWS::EC2::Subnet
-    Properties:
-      VpcId: !Ref VPC
-      AvailabilityZone: !Select [1, !GetAZs ""]
-      CidrBlock: !Ref IntraSubnet1AZ2CIDR
-      MapPublicIpOnLaunch: false
-      Tags:
-        - Key: Name
-          Value: ${VpcName}-intra-subnet1az2-${AWS::Region}
-
-  IntraSubnet2AZ1:
-    Type: AWS::EC2::Subnet
-    Properties:
-      VpcId: !Ref VPC
-      AvailabilityZone: !Select [0, !GetAZs ""]
-      CidrBlock: !Ref IntraSubnet2AZ1CIDR
-      MapPublicIpOnLaunch: false
-      Tags:
-        - Key: Name
-          Value: ${VpcName}-intra-subnet2az1-${AWS::Region}
-
-  IntraSubnet2AZ2:
-    Type: AWS::EC2::Subnet
-    Properties:
-      VpcId: !Ref VPC
-      AvailabilityZone: !Select [1, !GetAZs ""]
-      CidrBlock: !Ref IntraSubnet2AZ2CIDR
-      MapPublicIpOnLaunch: false
-      Tags:
-        - Key: Name
-          Value: ${VpcName}-intra-subnet2az2-${AWS::Region}
-
   Subnet1AZ1:
     Type: AWS::EC2::Subnet
     Properties:
@@ -119,7 +47,7 @@ Resources:
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
-          Value: ${VpcName}-subnet1az1-${AWS::Region}
+          Value: !Sub ${VpcName}-subnet1az1-${AWS::Region}
 
   Subnet1AZ2:
     Type: AWS::EC2::Subnet
@@ -130,7 +58,7 @@ Resources:
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
-          Value: ${VpcName}-subnet1az2-${AWS::Region}
+          Value: !Sub ${VpcName}-subnet1az2-${AWS::Region}
 
   Subnet2AZ1:
     Type: AWS::EC2::Subnet
@@ -141,7 +69,7 @@ Resources:
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
-          Value: ${VpcName}-subnet2az1-${AWS::Region}
+          Value: !Sub ${VpcName}-subnet2az1-${AWS::Region}
 
   Subnet2AZ2:
     Type: AWS::EC2::Subnet
@@ -152,62 +80,35 @@ Resources:
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
-          Value: ${VpcName}-subnet2az2-${AWS::Region}
-
-  IntraRouteTable:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      VpcId: !Ref VPC
-      Tags:
-        - Key: Name
-          Value: !Sub ${VpcName}-intra-route-${AWS::Region}
-
-  IntraSubnet1AZ1RouteTableAssociation:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId: !Ref IntraRouteTable
-      SubnetId: !Ref IntraSubnet1AZ1
-
-  IntraSubnet1AZ2RouteTableAssociation:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId: !Ref IntraRouteTable
-      SubnetId: !Ref IntraSubnet1AZ2
-
-  IntraSubnet2AZ1RouteTableAssociation:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId: !Ref IntraRouteTable
-      SubnetId: !Ref IntraSubnet2AZ1
-
-  IntraSubnet2AZ2RouteTableAssociation:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId: !Ref IntraRouteTable
-      SubnetId: !Ref IntraSubnet2AZ2
-
-  # OggInstance:
-  #   Type: AWS::EC2::Instance
-  #   Properties:
-  #     ImageId: "ami-027a63125bb60c403"
-  #     InstanceType: t2.micro
-  #     PrivateIpAddress: 
-  #     BlockDeviceMappings:
-  #       - DeviceName: /dev/sda1
-  #         Ebs:
-  #           VolumeType: gp3
-  #           DeleteOnTermination: false
-  #           VolumeSize: 250
+          Value: !Sub ${VpcName}-subnet2az2-${AWS::Region}
 
 Outputs:
   VPC:
     Description: A reference to the created VPC
     Value: !Ref VPC
+    Export:
+      Name: !Sub ${AWS::StackName}-VPC
 
-  Subnet1Subnets:
-    Description: A list of the subnet1 subnets
-    Value: !Join [",", [!Ref Subnet1AZ1, !Ref Subnet1AZ2]]
+  Subnet1AZ1:
+    Description: A reference to the created Subnet1AZ1
+    Value: !Ref Subnet1AZ1
+    Export:
+      Name: !Sub ${AWS::StackName}-Subnet1AZ1
 
-  Subnet2Subnets:
-    Description: A list of the subnet2 subnets
-    Value: !Join [",", [!Ref Subnet2AZ1, !Ref Subnet2AZ2]]
+  Subnet1AZ2:
+    Description: A reference to the created Subnet1AZ2
+    Value: !Ref Subnet1AZ2
+    Export:
+      Name: !Sub ${AWS::StackName}-Subnet1AZ2
+
+  Subnet2AZ1:
+    Description: A reference to the created Subnet2AZ1
+    Value: !Ref Subnet2AZ1
+    Export:
+      Name: !Sub ${AWS::StackName}-Subnet2AZ1
+
+  Subnet2AZ2:
+    Description: A reference to the created Subnet2AZ2
+    Value: !Ref Subnet2AZ2
+    Export:
+      Name: !Sub ${AWS::StackName}-Subnet2AZ2

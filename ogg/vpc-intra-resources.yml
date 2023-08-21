@@ -71,7 +71,7 @@ Resources:
   OggInstanceKeyPair:
     Type: AWS::EC2::KeyPair
     Properties: 
-      KeyName: OggInstanceKeyPairKeyName
+      KeyName: !Sub ${AWS::StackName}-OggInstanceKeyPair
 
   OggInstance:
     Type: AWS::EC2::Instance

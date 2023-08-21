@@ -13,10 +13,6 @@ Parameters:
     Type: String
     Default: 172.16.0.0/16
 
-  OggInstanceIpAddress:
-    Type: String
-    Default: 172.16.0.4
-
 Resources:
   VPC:
     Type: AWS::EC2::VPC
@@ -68,40 +64,48 @@ Resources:
   TransitGatewayIntraVPCAttachment:
     Type: AWS::EC2::TransitGatewayVpcAttachment
     Properties:
-      SubnetIds:
-        - !Ref Subnet1
       TransitGatewayId: !Ref TransitGateway
       VpcId: !Ref VPC
-
-  TransitGatewayIntraRouteTable:
-    Type: AWS::EC2::TransitGatewayRouteTable
-    Properties:
-      TransitGatewayId: !Ref TransitGateway
-      Tags:
-        - Key: Name
-          Value: intra-transit-gateway-intra-route-table
-
-  TransitGatewayCloudRouteTable:
-    Type: AWS::EC2::TransitGatewayRouteTable
-    Properties:
-      TransitGatewayId: !Ref TransitGateway
-      Tags:
-        - Key: Name
-          Value: intra-transit-gateway-cloud-route-table
-
-  TransitGatewayCloudRouteToIntraVPC:
-    Type: AWS::EC2::TransitGatewayRoute
-    Properties:
-      TransitGatewayRouteTableId: !Ref TransitGatewayCloudRouteTable
-      DestinationCidrBlock: !Ref VpcCIDR
-      TransitGatewayAttachmentId: !Ref TransitGatewayIntraVPCAttachment
+      SubnetIds:
+        - !Ref Subnet1
 
   IntraRouteTableRouteToTransitGateway:
+    DependsOn:
+      - TransitGatewayIntraVPCAttachment
     Type: AWS::EC2::Route
     Properties:
       DestinationCidrBlock: 0.0.0.0/0
       RouteTableId: !Ref IntraRouteTable
       TransitGatewayId: !Ref TransitGateway
+
+  # TransitGatewayIntraRouteTable:
+  #   Type: AWS::EC2::TransitGatewayRouteTable
+  #   Properties:
+  #     TransitGatewayId: !Ref TransitGateway
+  #     Tags:
+  #       - Key: Name
+  #         Value: intra-transit-gateway-intra-route-table
+
+  # TransitGatewayIntraVPCAttachmentRouteTable:
+  #   Type: AWS::EC2::TransitGatewayRouteTableAssociation
+  #   Properties:
+  #     TransitGatewayAttachmentId: !Ref TransitGatewayIntraVPCAttachment
+  #     TransitGatewayRouteTableId: !Ref TransitGatewayIntraRouteTable
+
+  # TransitGatewayCloudRouteTable:
+  #   Type: AWS::EC2::TransitGatewayRouteTable
+  #   Properties:
+  #     TransitGatewayId: !Ref TransitGateway
+  #     Tags:
+  #       - Key: Name
+  #         Value: intra-transit-gateway-cloud-route-table
+
+  # TransitGatewayCloudRouteToIntraVPC:
+  #   Type: AWS::EC2::TransitGatewayRoute
+  #   Properties:
+  #     TransitGatewayRouteTableId: !Ref TransitGatewayCloudRouteTable
+  #     DestinationCidrBlock: !Ref VpcCIDR
+  #     TransitGatewayAttachmentId: !Ref TransitGatewayIntraVPCAttachment
 
 Outputs:
   VPC:
