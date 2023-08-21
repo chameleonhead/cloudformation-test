@@ -28,7 +28,6 @@ Resources:
         - Key: Name
           Value: !Sub ${VpcName}-${AWS::Region}
 
-
   Subnet1:
     Type: AWS::EC2::Subnet
     Properties:
@@ -38,7 +37,7 @@ Resources:
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
-          Value: ${VpcName}-subnet1-${AWS::Region}
+          Value: !Sub ${VpcName}-subnet1-${AWS::Region}
 
   IntraRouteTable:
     Type: AWS::EC2::RouteTable
@@ -54,11 +53,74 @@ Resources:
       RouteTableId: !Ref IntraRouteTable
       SubnetId: !Ref Subnet1
 
+  VPCEndpointSSM:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      PrivateDnsEnabled: true
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.ssm
+      SubnetIds:
+        - !Ref Subnet1
+      VpcEndpointType: Interface
+      VpcId: !Ref VPC
+
+  EndpointSSMMessages:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      PrivateDnsEnabled: true
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.ssmmessages
+      SubnetIds:
+        - !Ref Subnet1
+      VpcEndpointType: Interface
+      VpcId: !Ref VPC
+
+  EndpointEC2Messages:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      PrivateDnsEnabled: true
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.ec2messages
+      SubnetIds:
+        - !Ref Subnet1
+      VpcEndpointType: Interface
+      VpcId: !Ref VPC
+
+  EndpointS3:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      RouteTableIds:
+        - !Ref IntraRouteTable
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.s3
+      VpcEndpointType: Gateway
+      VpcId: !Ref VPC
+
+  EC2IAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+
+  EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+        - !Ref EC2IAMRole
+
   OggInstance:
     Type: AWS::EC2::Instance
     Properties:
       ImageId: ami-087bd73fc10ea41af
       InstanceType: t2.micro
+      IamInstanceProfile: !Ref EC2InstanceProfile
       PrivateIpAddress: !Ref OggInstanceIpAddress
       SubnetId: !Ref Subnet1
       BlockDeviceMappings:
