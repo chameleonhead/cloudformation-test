@@ -16,7 +16,7 @@ Resources:
       VpcEndpointType: Interface
       VpcId: !ImportValue vpc-intra-VPC
 
-  EndpointSSMMessages:
+  VPCEndpointSSMMessages:
     Type: AWS::EC2::VPCEndpoint
     Properties:
       PrivateDnsEnabled: true
@@ -26,7 +26,7 @@ Resources:
       VpcEndpointType: Interface
       VpcId: !ImportValue vpc-intra-VPC
 
-  EndpointEC2Messages:
+  VPCEndpointEC2Messages:
     Type: AWS::EC2::VPCEndpoint
     Properties:
       PrivateDnsEnabled: true
@@ -36,7 +36,7 @@ Resources:
       VpcEndpointType: Interface
       VpcId: !ImportValue vpc-intra-VPC
 
-  EndpointS3:
+  VPCEndpointS3:
     Type: AWS::EC2::VPCEndpoint
     Properties:
       RouteTableIds:
@@ -68,11 +68,17 @@ Resources:
       Roles:
         - !Ref EC2IAMRole
 
+  OggInstanceKeyPair:
+    Type: AWS::EC2::KeyPair
+    Properties: 
+      KeyName: OggInstanceKeyPairKeyName
+
   OggInstance:
     Type: AWS::EC2::Instance
     Properties:
       ImageId: ami-087bd73fc10ea41af
       InstanceType: t2.micro
+      KeyName: !Ref OggInstanceKeyPair
       IamInstanceProfile: !Ref EC2InstanceProfile
       PrivateIpAddress: !Ref OggInstanceIpAddress
       SubnetId: !ImportValue vpc-intra-Subnet1
