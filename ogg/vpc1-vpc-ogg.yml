@@ -1,0 +1,14 @@
+StackName: vpc1-vpc-ogg
+Parameters:
+  - ParameterKey: "VpcName"
+    ParameterValue: "vpc1"
+  - ParameterKey: "VpcCIDR"
+    ParameterValue: "10.1.0.0/16"
+  - ParameterKey: "Subnet1AZ1CIDR"
+    ParameterValue: "10.1.0.0/24"
+  - ParameterKey: "Subnet1AZ2CIDR"
+    ParameterValue: "10.1.1.0/24"
+  - ParameterKey: "Subnet2AZ1CIDR"
+    ParameterValue: "10.1.2.0/24"
+  - ParameterKey: "Subnet2AZ2CIDR"
+    ParameterValue: "10.1.3.0/24"

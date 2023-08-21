@@ -1,0 +1,15 @@
+StackName: vpc2-vpc-ogg
+TemplateBody: "file://vpc-ogg.yml"
+Parameters:
+  - ParameterKey: "VpcName"
+    ParameterValue: "vpc2"
+  - ParameterKey: "VpcCIDR"
+    ParameterValue: "10.2.0.0/16"
+  - ParameterKey: "Subnet1AZ1CIDR"
+    ParameterValue: "10.2.0.0/24"
+  - ParameterKey: "Subnet1AZ2CIDR"
+    ParameterValue: "10.2.1.0/24"
+  - ParameterKey: "Subnet2AZ1CIDR"
+    ParameterValue: "10.2.2.0/24"
+  - ParameterKey: "Subnet2AZ2CIDR"
+    ParameterValue: "10.2.3.0/24"
