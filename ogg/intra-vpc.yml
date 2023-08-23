@@ -35,6 +35,33 @@ Resources:
         - Key: Name
           Value: !Sub ${VpcName}-subnet1-${AWS::Region}
 
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub ${VpcName}-igw-${AWS::Region}
+
+  VpcGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+
+  EIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+
+  NatGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt EIP.AllocationId
+      SubnetId: !Ref Subnet1
+      Tags:
+        - Key: Name
+          Value: !Sub ${VpcName}-natgw-${AWS::Region}
+
   RouteTableForSubnet1:
     Type: AWS::EC2::RouteTable
     Properties:
@@ -42,6 +69,13 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub ${VpcName}-route-${AWS::Region}
+
+  RouteTableForSubnet1Route:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref RouteTableForSubnet1
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway
 
   SubnetRouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation

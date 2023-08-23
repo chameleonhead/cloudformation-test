@@ -160,25 +160,37 @@ Resources:
         - Key: Name
           Value: !Sub ${VpcName}-intra-subnet2az2-${AWS::Region}
 
-  RouteTableForIntraSubnet2:
+  RouteTableForIntraSubnet:
     Type: AWS::EC2::RouteTable
     Properties:
-      VpcId: !ImportValue multicidr-vpc-VPC
+      VpcId: !Ref VPC
       Tags:
         - Key: Name
-          Value: !Sub ${VpcName}-route-table-intra-subnet2-${AWS::Region}
+          Value: !Sub ${VpcName}-route-table-intra-subnet1-${AWS::Region}
+
+  RouteTableAssociationForIntraSubnet1AZ1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref RouteTableForIntraSubnet
+      SubnetId: !Ref IntraSubnet1AZ1
+
+  RouteTableAssociationForIntraSubnet1AZ2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref RouteTableForIntraSubnet
+      SubnetId: !Ref IntraSubnet1AZ2
 
   RouteTableAssociationForIntraSubnet2AZ1:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      RouteTableId: !Ref RouteTableForIntraSubnet2
-      SubnetId: !ImportValue multicidr-vpc-IntraSubnet2AZ1
+      RouteTableId: !Ref RouteTableForIntraSubnet
+      SubnetId: !Ref IntraSubnet2AZ1
 
   RouteTableAssociationForIntraSubnet2AZ2:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      RouteTableId: !Ref RouteTableForIntraSubnet2
-      SubnetId: !ImportValue multicidr-vpc-IntraSubnet2AZ2
+      RouteTableId: !Ref RouteTableForIntraSubnet
+      SubnetId: !Ref IntraSubnet2AZ2
 
 Outputs:
   VPC:
@@ -235,7 +247,8 @@ Outputs:
     Export:
       Name: !Sub ${AWS::StackName}-IntraSubnet2AZ2
 
-  RouteTableForIntraSubnet2:
-    Value: !Ref RouteTableForIntraSubnet2
+
+  RouteTableForIntraSubnet:
+    Value: !Ref RouteTableForIntraSubnet
     Export:
-      Name: !Sub ${AWS::StackName}-RouteTableForIntraSubnet2
+      Name: !Sub ${AWS::StackName}-RouteTableForIntraSubnet

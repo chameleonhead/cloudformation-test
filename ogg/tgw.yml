@@ -41,12 +41,39 @@ Resources:
         - Key: Name
           Value: !Sub ${TgwName}-multicidr-attachment
 
-  RouteTableRouteForIntraVPC:
+  RouteTableRouteForIntraVPCA:
     DependsOn:
       - TransitGatewayVpcAttachmentIntraVpc
     Type: AWS::EC2::Route
     Properties:
-      DestinationCidrBlock: 0.0.0.0/0
+      DestinationCidrBlock: 10.0.0.0/8
+      RouteTableId: !ImportValue intra-vpc-RouteTableForSubnet1
+      TransitGatewayId: !Ref TransitGateway
+
+  RouteTableRouteForIntraVPCB:
+    DependsOn:
+      - TransitGatewayVpcAttachmentIntraVpc
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 172.16.0.0/12
+      RouteTableId: !ImportValue intra-vpc-RouteTableForSubnet1
+      TransitGatewayId: !Ref TransitGateway
+
+  RouteTableRouteForIntraVPCC:
+    DependsOn:
+      - TransitGatewayVpcAttachmentIntraVpc
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 192.168.0.0/16
+      RouteTableId: !ImportValue intra-vpc-RouteTableForSubnet1
+      TransitGatewayId: !Ref TransitGateway
+
+  RouteTableRouteForIntraVPCCGN:
+    DependsOn:
+      - TransitGatewayVpcAttachmentIntraVpc
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 100.64.0.0/10
       RouteTableId: !ImportValue intra-vpc-RouteTableForSubnet1
       TransitGatewayId: !Ref TransitGateway
 
@@ -56,7 +83,7 @@ Resources:
     Type: AWS::EC2::Route
     Properties:
       DestinationCidrBlock: 0.0.0.0/0
-      RouteTableId: !ImportValue multicidr-vpc-RouteTableForIntraSubnet2
+      RouteTableId: !ImportValue multicidr-vpc-RouteTableForIntraSubnet
       TransitGatewayId: !Ref TransitGateway
 
 Outputs:
