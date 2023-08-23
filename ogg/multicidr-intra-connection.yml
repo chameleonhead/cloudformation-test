@@ -16,8 +16,7 @@ Resources:
         - !ImportValue multicidr-vpc-IntraSubnet1AZ2
       Tags:
         - Key: Name
-          Value: !Sub ${VpcName}-route-table-intra-subnet2-${AWS::Region}
-
+          Value: intra-transit-gateway-multicidr-attachment
 
   RouteTableForIntraSubnet2:
     Type: AWS::EC2::RouteTable

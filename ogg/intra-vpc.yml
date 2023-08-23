@@ -68,6 +68,9 @@ Resources:
       VpcId: !Ref VPC
       SubnetIds:
         - !Ref Subnet1
+      Tags:
+        - Key: Name
+          Value: intra-transit-gateway-intra-attachment
 
   IntraRouteTableRouteToTransitGateway:
     DependsOn:
