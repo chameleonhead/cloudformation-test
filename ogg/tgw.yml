@@ -9,9 +9,9 @@ Resources:
   TransitGateway:
     Type: AWS::EC2::TransitGateway
     Properties:
-      AutoAcceptSharedAttachments: enable
-      DefaultRouteTableAssociation: enable
-      DefaultRouteTablePropagation: enable
+      AutoAcceptSharedAttachments: disable
+      DefaultRouteTableAssociation: disable
+      DefaultRouteTablePropagation: disable
       VpnEcmpSupport: enable
       DnsSupport: enable
       Tags:
@@ -29,6 +29,12 @@ Resources:
         - Key: Name
           Value: !Sub ${TgwName}-intra-attachment
 
+  TransitGatewayVpcAttachmentIntraVpcRouteTableAssociation:
+    Type: AWS::EC2::TransitGatewayRouteTableAssociation
+    Properties:
+      TransitGatewayAttachmentId: !Ref TransitGatewayVpcAttachmentIntraVpc
+      TransitGatewayRouteTableId: !Ref TransitGatewayIngressRouteTable
+
   TransitGatewayVpcAttachmentMulticidrVpc:
     Type: AWS::EC2::TransitGatewayVpcAttachment
     Properties:
@@ -41,7 +47,102 @@ Resources:
         - Key: Name
           Value: !Sub ${TgwName}-multicidr-attachment
 
-  RouteTableRouteForIntraVPCA:
+  TransitGatewayVpcAttachmentMulticidrVpcRouteTableAssociation:
+    Type: AWS::EC2::TransitGatewayRouteTableAssociation
+    Properties:
+      TransitGatewayAttachmentId: !Ref TransitGatewayVpcAttachmentMulticidrVpc
+      TransitGatewayRouteTableId: !Ref TransitGatewayEgressRouteTable
+
+  TransitGatewayEgressRouteTable:
+    Type: AWS::EC2::TransitGatewayRouteTable
+    Properties:
+      TransitGatewayId: !Ref TransitGateway
+      Tags:
+        - Key: Name
+          Value: !Sub ${TgwName}-egress-route-table
+
+  TransitGatewayEgressRouteTableIntraRoute:
+    Type: AWS::EC2::TransitGatewayRoute
+    Properties:
+      TransitGatewayRouteTableId: !Ref TransitGatewayEgressRouteTable
+      DestinationCidrBlock: 172.16.0.0/16
+      TransitGatewayAttachmentId: !Ref TransitGatewayVpcAttachmentIntraVpc
+
+  TransitGatewayEgressRouteTableARoute:
+    Type: AWS::EC2::TransitGatewayRoute
+    Properties:
+      TransitGatewayRouteTableId: !Ref TransitGatewayEgressRouteTable
+      DestinationCidrBlock: 10.0.0.0/8
+      Blackhole: true
+
+  TransitGatewayEgressRouteTableCGNRoute:
+    Type: AWS::EC2::TransitGatewayRoute
+    Properties:
+      TransitGatewayRouteTableId: !Ref TransitGatewayEgressRouteTable
+      DestinationCidrBlock: 100.64.0.0/10
+      Blackhole: true
+
+  TransitGatewayEgressRouteTableBRoute:
+    Type: AWS::EC2::TransitGatewayRoute
+    Properties:
+      TransitGatewayRouteTableId: !Ref TransitGatewayEgressRouteTable
+      DestinationCidrBlock: 172.16.0.0/12
+      Blackhole: true
+
+  TransitGatewayEgressRouteTableCRoute:
+    Type: AWS::EC2::TransitGatewayRoute
+    Properties:
+      TransitGatewayRouteTableId: !Ref TransitGatewayEgressRouteTable
+      DestinationCidrBlock: 192.168.0.0/16
+      Blackhole: true
+
+  TransitGatewayEgressRouteTableInternetRoute:
+    Type: AWS::EC2::TransitGatewayRoute
+    Properties:
+      TransitGatewayRouteTableId: !Ref TransitGatewayEgressRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      TransitGatewayAttachmentId: !Ref TransitGatewayVpcAttachmentIntraVpc
+
+  TransitGatewayIngressRouteTable:
+    Type: AWS::EC2::TransitGatewayRouteTable
+    Properties:
+      TransitGatewayId: !Ref TransitGateway
+      Tags:
+        - Key: Name
+          Value: !Sub ${TgwName}-ingress-route-table
+
+
+  TransitGatewayIngressRouteTableIntraRoute:
+    Type: AWS::EC2::TransitGatewayRoute
+    Properties:
+      TransitGatewayRouteTableId: !Ref TransitGatewayIngressRouteTable
+      DestinationCidrBlock: 172.16.0.0/16
+      TransitGatewayAttachmentId: !Ref TransitGatewayVpcAttachmentIntraVpc
+
+  TransitGatewayIngressRouteTableMulticidrRoute1:
+    Type: AWS::EC2::TransitGatewayRoute
+    Properties:
+      TransitGatewayRouteTableId: !Ref TransitGatewayIngressRouteTable
+      DestinationCidrBlock: 10.0.0.0/16
+      TransitGatewayAttachmentId: !Ref TransitGatewayVpcAttachmentMulticidrVpc
+
+  TransitGatewayIngressRouteTableMulticidrRoute2:
+    Type: AWS::EC2::TransitGatewayRoute
+    Properties:
+      TransitGatewayRouteTableId: !Ref TransitGatewayIngressRouteTable
+      DestinationCidrBlock: 100.64.2.0/24
+      TransitGatewayAttachmentId: !Ref TransitGatewayVpcAttachmentMulticidrVpc
+
+  IntraVpcPublicSubnetRouteForIntraVPCA:
+    DependsOn:
+      - TransitGatewayVpcAttachmentIntraVpc
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 10.0.0.0/8
+      RouteTableId: !ImportValue intra-vpc-RouteTableForPublicSubnet
+      TransitGatewayId: !Ref TransitGateway
+
+  IntraVpcSubnet1RouteForIntraVPCA:
     DependsOn:
       - TransitGatewayVpcAttachmentIntraVpc
     Type: AWS::EC2::Route
@@ -50,7 +151,16 @@ Resources:
       RouteTableId: !ImportValue intra-vpc-RouteTableForSubnet1
       TransitGatewayId: !Ref TransitGateway
 
-  RouteTableRouteForIntraVPCB:
+  IntraVpcPublicSubnetRouteForIntraVPCB:
+    DependsOn:
+      - TransitGatewayVpcAttachmentIntraVpc
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 172.16.0.0/12
+      RouteTableId: !ImportValue intra-vpc-RouteTableForPublicSubnet
+      TransitGatewayId: !Ref TransitGateway
+
+  IntraVpcSubnet1RouteForIntraVPCB:
     DependsOn:
       - TransitGatewayVpcAttachmentIntraVpc
     Type: AWS::EC2::Route
@@ -59,7 +169,16 @@ Resources:
       RouteTableId: !ImportValue intra-vpc-RouteTableForSubnet1
       TransitGatewayId: !Ref TransitGateway
 
-  RouteTableRouteForIntraVPCC:
+  IntraVpcPublicSubnetRouteForIntraVPCC:
+    DependsOn:
+      - TransitGatewayVpcAttachmentIntraVpc
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 192.168.0.0/16
+      RouteTableId: !ImportValue intra-vpc-RouteTableForPublicSubnet
+      TransitGatewayId: !Ref TransitGateway
+
+  IntraVpcSubnet1RouteForIntraVPCC:
     DependsOn:
       - TransitGatewayVpcAttachmentIntraVpc
     Type: AWS::EC2::Route
@@ -68,7 +187,16 @@ Resources:
       RouteTableId: !ImportValue intra-vpc-RouteTableForSubnet1
       TransitGatewayId: !Ref TransitGateway
 
-  RouteTableRouteForIntraVPCCGN:
+  IntraVpcPublicSubnetRouteForIntraVPCCGN:
+    DependsOn:
+      - TransitGatewayVpcAttachmentIntraVpc
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 100.64.0.0/10
+      RouteTableId: !ImportValue intra-vpc-RouteTableForPublicSubnet
+      TransitGatewayId: !Ref TransitGateway
+
+  IntraVpcSubnet1RouteForIntraVPCCGN:
     DependsOn:
       - TransitGatewayVpcAttachmentIntraVpc
     Type: AWS::EC2::Route

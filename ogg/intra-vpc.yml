@@ -83,7 +83,7 @@ Resources:
       VpcId: !Ref VPC
       Tags:
         - Key: Name
-          Value: !Sub ${VpcName}-route-${AWS::Region}
+          Value: !Sub ${VpcName}-route-subnet1-${AWS::Region}
 
   RouteTableForSubnet1Route:
     Type: AWS::EC2::Route
@@ -104,7 +104,7 @@ Resources:
       VpcId: !Ref VPC
       Tags:
         - Key: Name
-          Value: !Sub ${VpcName}-route-${AWS::Region}
+          Value: !Sub ${VpcName}-route-public-subnet-${AWS::Region}
 
   RouteTableForPublicSubnetRoute:
     Type: AWS::EC2::Route
@@ -134,6 +134,12 @@ Outputs:
 
   RouteTableForSubnet1:
     Description: A reference to the route table
-    Value: !Join [",", [!Ref RouteTableForSubnet1]]
+    Value: !Ref RouteTableForSubnet1
     Export:
       Name: !Sub ${AWS::StackName}-RouteTableForSubnet1
+
+  RouteTableForPublicSubnet:
+    Description: A reference to the route table
+    Value: !Ref RouteTableForPublicSubnet
+    Export:
+      Name: !Sub ${AWS::StackName}-RouteTableForPublicSubnet

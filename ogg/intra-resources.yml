@@ -1,11 +1,29 @@
 AWSTemplateFormatVersion: 2010-09-09
 
 Parameters:
+  VpcName:
+    Type: String
+    Default: intra-vpc
+
   OggInstanceIpAddress:
     Type: String
     Default: 172.16.0.4
 
 Resources:
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: OGG Security Group
+      VpcId: !ImportValue intra-vpc-VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 0
+          ToPort: 65535
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub ${VpcName}-ogg-security-group-${AWS::Region}
+
   EC2IAMRole:
     Type: AWS::IAM::Role
     Properties:
@@ -31,7 +49,7 @@ Resources:
 
   OggInstanceKeyPair:
     Type: AWS::EC2::KeyPair
-    Properties: 
+    Properties:
       KeyName: !Sub ${AWS::StackName}-OggInstanceKeyPair
 
   OggInstance:
@@ -43,6 +61,8 @@ Resources:
       IamInstanceProfile: !Ref EC2InstanceProfile
       PrivateIpAddress: !Ref OggInstanceIpAddress
       SubnetId: !ImportValue intra-vpc-Subnet1
+      SecurityGroupIds:
+        - !Ref SecurityGroup
       BlockDeviceMappings:
         - DeviceName: /dev/sda1
           Ebs:
