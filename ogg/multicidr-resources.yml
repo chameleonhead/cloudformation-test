@@ -18,7 +18,7 @@ Resources:
       InstanceType: t2.micro
       KeyName: !Ref OggInstanceKeyPair
       PrivateIpAddress: !Ref OggInstanceIpAddress
-      SubnetId: !ImportValue vpc-multiple-cidr-intra-connection-IntraSubnet2AZ1
+      SubnetId: !ImportValue multicidr-vpc-IntraSubnet2AZ1
       BlockDeviceMappings:
         - DeviceName: /dev/sda1
           Ebs:

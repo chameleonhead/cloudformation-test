@@ -3,7 +3,7 @@ AWSTemplateFormatVersion: 2010-09-09
 Parameters:
   VpcName:
     Type: String
-    Default: vpc-intra
+    Default: intra-vpc
 
   VpcCIDR:
     Type: String

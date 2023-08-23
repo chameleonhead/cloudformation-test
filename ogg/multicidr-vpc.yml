@@ -5,7 +5,7 @@ AWSTemplateFormatVersion: 2010-09-09
 Parameters:
   VpcName:
     Type: String
-    Default: vpc-multiple-cidr
+    Default: multicidr-vpc
 
   VpcCIDR:
     Type: String
@@ -26,6 +26,26 @@ Parameters:
   Subnet2AZ2CIDR:
     Type: String
     Default: 10.0.3.0/24
+
+  IntraVpcCIDR:
+    Type: String
+    Default: 100.64.2.0/24
+
+  IntraSubnet1AZ1CIDR:
+    Type: String
+    Default: 100.64.2.0/28
+
+  IntraSubnet1AZ2CIDR:
+    Type: String
+    Default: 100.64.2.16/28
+
+  IntraSubnet2AZ1CIDR:
+    Type: String
+    Default: 100.64.2.128/27
+
+  IntraSubnet2AZ2CIDR:
+    Type: String
+    Default: 100.64.2.160/27
 
 Resources:
   VPC:
@@ -82,6 +102,64 @@ Resources:
         - Key: Name
           Value: !Sub ${VpcName}-subnet2az2-${AWS::Region}
 
+  IntraVpcCidrBlock:
+    Type: AWS::EC2::VPCCidrBlock
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref IntraVpcCIDR
+
+  IntraSubnet1AZ1:
+    DependsOn:
+      - IntraVpcCidrBlock
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      CidrBlock: !Ref IntraSubnet1AZ1CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${VpcName}-intra-subnet1az1-${AWS::Region}
+
+  IntraSubnet1AZ2:
+    DependsOn:
+      - IntraVpcCidrBlock
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [1, !GetAZs ""]
+      CidrBlock: !Ref IntraSubnet1AZ2CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${VpcName}-intra-subnet1az2-${AWS::Region}
+
+  IntraSubnet2AZ1:
+    DependsOn:
+      - IntraVpcCidrBlock
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      CidrBlock: !Ref IntraSubnet2AZ1CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${VpcName}-intra-subnet2az1-${AWS::Region}
+
+  IntraSubnet2AZ2:
+    DependsOn:
+      - IntraVpcCidrBlock
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [1, !GetAZs ""]
+      CidrBlock: !Ref IntraSubnet2AZ2CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${VpcName}-intra-subnet2az2-${AWS::Region}
+
 Outputs:
   VPC:
     Description: A reference to the created VPC
@@ -112,3 +190,27 @@ Outputs:
     Value: !Ref Subnet2AZ2
     Export:
       Name: !Sub ${AWS::StackName}-Subnet2AZ2
+
+  IntraSubnet1AZ1:
+    Description: A reference to the created IntraSubnet1AZ1
+    Value: !Ref IntraSubnet1AZ1
+    Export:
+      Name: !Sub ${AWS::StackName}-IntraSubnet1AZ1
+
+  IntraSubnet1AZ2:
+    Description: A reference to the created IntraSubnet1AZ2
+    Value: !Ref IntraSubnet1AZ2
+    Export:
+      Name: !Sub ${AWS::StackName}-IntraSubnet1AZ2
+
+  IntraSubnet2AZ1:
+    Description: A reference to the created IntraSubnet2AZ1
+    Value: !Ref IntraSubnet2AZ1
+    Export:
+      Name: !Sub ${AWS::StackName}-IntraSubnet2AZ1
+
+  IntraSubnet2AZ2:
+    Description: A reference to the created IntraSubnet2AZ2
+    Value: !Ref IntraSubnet2AZ2
+    Export:
+      Name: !Sub ${AWS::StackName}-IntraSubnet2AZ2

@@ -12,9 +12,9 @@ Resources:
       PrivateDnsEnabled: true
       ServiceName: !Sub com.amazonaws.${AWS::Region}.ssm
       SubnetIds:
-        - !ImportValue vpc-intra-Subnet1
+        - !ImportValue intra-vpc-Subnet1
       VpcEndpointType: Interface
-      VpcId: !ImportValue vpc-intra-VPC
+      VpcId: !ImportValue intra-vpc-VPC
 
   VPCEndpointSSMMessages:
     Type: AWS::EC2::VPCEndpoint
@@ -22,9 +22,9 @@ Resources:
       PrivateDnsEnabled: true
       ServiceName: !Sub com.amazonaws.${AWS::Region}.ssmmessages
       SubnetIds:
-        - !ImportValue vpc-intra-Subnet1
+        - !ImportValue intra-vpc-Subnet1
       VpcEndpointType: Interface
-      VpcId: !ImportValue vpc-intra-VPC
+      VpcId: !ImportValue intra-vpc-VPC
 
   VPCEndpointEC2Messages:
     Type: AWS::EC2::VPCEndpoint
@@ -32,18 +32,18 @@ Resources:
       PrivateDnsEnabled: true
       ServiceName: !Sub com.amazonaws.${AWS::Region}.ec2messages
       SubnetIds:
-        - !ImportValue vpc-intra-Subnet1
+        - !ImportValue intra-vpc-Subnet1
       VpcEndpointType: Interface
-      VpcId: !ImportValue vpc-intra-VPC
+      VpcId: !ImportValue intra-vpc-VPC
 
   VPCEndpointS3:
     Type: AWS::EC2::VPCEndpoint
     Properties:
       RouteTableIds:
-        - !ImportValue vpc-intra-IntraRouteTable
+        - !ImportValue intra-vpc-IntraRouteTable
       ServiceName: !Sub com.amazonaws.${AWS::Region}.s3
       VpcEndpointType: Gateway
-      VpcId: !ImportValue vpc-intra-VPC
+      VpcId: !ImportValue intra-vpc-VPC
 
   EC2IAMRole:
     Type: AWS::IAM::Role
@@ -81,7 +81,7 @@ Resources:
       KeyName: !Ref OggInstanceKeyPair
       IamInstanceProfile: !Ref EC2InstanceProfile
       PrivateIpAddress: !Ref OggInstanceIpAddress
-      SubnetId: !ImportValue vpc-intra-Subnet1
+      SubnetId: !ImportValue intra-vpc-Subnet1
       BlockDeviceMappings:
         - DeviceName: /dev/sda1
           Ebs:
