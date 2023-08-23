@@ -6,45 +6,6 @@ Parameters:
     Default: 172.16.0.4
 
 Resources:
-  VPCEndpointSSM:
-    Type: AWS::EC2::VPCEndpoint
-    Properties:
-      PrivateDnsEnabled: true
-      ServiceName: !Sub com.amazonaws.${AWS::Region}.ssm
-      SubnetIds:
-        - !ImportValue intra-vpc-Subnet1
-      VpcEndpointType: Interface
-      VpcId: !ImportValue intra-vpc-VPC
-
-  VPCEndpointSSMMessages:
-    Type: AWS::EC2::VPCEndpoint
-    Properties:
-      PrivateDnsEnabled: true
-      ServiceName: !Sub com.amazonaws.${AWS::Region}.ssmmessages
-      SubnetIds:
-        - !ImportValue intra-vpc-Subnet1
-      VpcEndpointType: Interface
-      VpcId: !ImportValue intra-vpc-VPC
-
-  VPCEndpointEC2Messages:
-    Type: AWS::EC2::VPCEndpoint
-    Properties:
-      PrivateDnsEnabled: true
-      ServiceName: !Sub com.amazonaws.${AWS::Region}.ec2messages
-      SubnetIds:
-        - !ImportValue intra-vpc-Subnet1
-      VpcEndpointType: Interface
-      VpcId: !ImportValue intra-vpc-VPC
-
-  VPCEndpointS3:
-    Type: AWS::EC2::VPCEndpoint
-    Properties:
-      RouteTableIds:
-        - !ImportValue intra-vpc-IntraRouteTable
-      ServiceName: !Sub com.amazonaws.${AWS::Region}.s3
-      VpcEndpointType: Gateway
-      VpcId: !ImportValue intra-vpc-VPC
-
   EC2IAMRole:
     Type: AWS::IAM::Role
     Properties:
