@@ -1,0 +1,39 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Parameters:
+  TargetInstanceIpAddress:
+    Type: String
+    Default: 172.16.0.5
+
+Resources:
+  OggEndpointService:
+    Type: AWS::EC2::VPCEndpointService
+    Properties:
+      NetworkLoadBalancerArns:
+        - !ImportValue prvlink-vpc-NetworkLoadBalancer
+      AcceptanceRequired: false
+
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: OGG Security Group
+      VpcId: !ImportValue intra-vpc-VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 0
+          ToPort: 65535
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub intra-vpc-ogg-security-group-${AWS::Region}
+
+  OggEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcEndpointType: Interface
+      VpcId: !ImportValue intra-vpc-VPC
+      ServiceName: !Sub com.amazonaws.vpce.ap-northeast-1.${OggEndpointService.ServiceId}
+      SubnetIds:
+        - !ImportValue intra-vpc-Subnet1
+      SecurityGroupIds:
+        - !Ref SecurityGroup

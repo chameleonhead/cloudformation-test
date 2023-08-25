@@ -1,0 +1,325 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  VpcName:
+    Type: String
+    Default: prvlink-vpc
+
+  VpcCIDR:
+    Type: String
+    Default: 10.2.0.0/16
+
+  PublicSubnetAZ1CIDR:
+    Type: String
+    Default: 10.2.0.0/24
+
+  PublicSubnetAZ2CIDR:
+    Type: String
+    Default: 10.2.1.0/24
+
+  IntraSubnetAZ1CIDR:
+    Type: String
+    Default: 10.2.2.0/24
+
+  IntraSubnetAZ2CIDR:
+    Type: String
+    Default: 10.2.3.0/24
+
+  PrivateSubnetAZ1CIDR:
+    Type: String
+    Default: 10.2.4.0/24
+
+  PrivateSubnetAZ2CIDR:
+    Type: String
+    Default: 10.2.5.0/24
+
+  OggInstanceIpAddress:
+    Type: String
+    Default: 10.2.4.4
+
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCIDR
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${VpcName}-${AWS::Region}
+
+  PublicSubnetAZ1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      CidrBlock: !Ref PublicSubnetAZ1CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${VpcName}-publicsubnetaz1-${AWS::Region}
+
+  PublicSubnetAZ2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [1, !GetAZs ""]
+      CidrBlock: !Ref PublicSubnetAZ2CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${VpcName}-publicsubnetaz2-${AWS::Region}
+
+  IntraSubnetAZ1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      CidrBlock: !Ref IntraSubnetAZ1CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${VpcName}-intrasubnetaz1-${AWS::Region}
+
+  IntraSubnetAZ2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [1, !GetAZs ""]
+      CidrBlock: !Ref IntraSubnetAZ2CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${VpcName}-intrasubnetaz2-${AWS::Region}
+
+  PrivateSubnetAZ1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      CidrBlock: !Ref PrivateSubnetAZ1CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${VpcName}-privatesubnetaz1-${AWS::Region}
+
+  PrivateSubnetAZ2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [1, !GetAZs ""]
+      CidrBlock: !Ref PrivateSubnetAZ2CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${VpcName}-privatesubnetaz2-${AWS::Region}
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub ${VpcName}-igw-${AWS::Region}
+
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${VpcName}-publicroutetable-${AWS::Region}
+
+  PublicRouteInternetGateway:
+    DependsOn:
+      - InternetGatewayAttachment
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnetAZ1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnetAZ1
+      RouteTableId: !Ref PublicRouteTable
+
+  PublicSubnetAZ2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnetAZ2
+      RouteTableId: !Ref PublicRouteTable
+
+  NatGatewayEIP1:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+
+  NatGatewayAZ1:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatGatewayEIP1.AllocationId
+      SubnetId: !Ref PublicSubnetAZ1
+      Tags:
+        - Key: Name
+          Value: !Sub ${VpcName}-natgw-${AWS::Region}
+
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${VpcName}-publicroutetable-${AWS::Region}
+
+  PrivateRouteNatGateway:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGatewayAZ1
+
+  PrivateSubnetAZ1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnetAZ1
+      RouteTableId: !Ref PrivateRouteTable
+
+  PrivateSubnetAZ2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnetAZ2
+      RouteTableId: !Ref PrivateRouteTable
+
+  NetworkLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: !Sub ${VpcName}-nlb
+      Scheme: internal
+      Type: network
+      Subnets:
+        - !Ref IntraSubnetAZ1
+        - !Ref IntraSubnetAZ2
+
+  NetworkLoadBalancerListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref NetworkLoadBalancer
+      Port: 3389
+      Protocol: TCP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref NetworkLoadBalancerTargetGroup
+
+  NetworkLoadBalancerTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Sub ${VpcName}-nlb-tg
+      Port: 3389
+      Protocol: TCP
+      VpcId: !Ref VPC
+      TargetType: instance
+      Targets:
+        - Id: !Ref OggInstance
+
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: OGG Security Group
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 0
+          ToPort: 65535
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub ${VpcName}-ogg-security-group-${AWS::Region}
+
+  EC2IAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+
+  EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+        - !Ref EC2IAMRole
+
+  OggInstanceKeyPair:
+    Type: AWS::EC2::KeyPair
+    Properties:
+      KeyName: !Sub ${AWS::StackName}-OggInstanceKeyPair
+
+  OggInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-087bd73fc10ea41af
+      InstanceType: t2.micro
+      KeyName: !Ref OggInstanceKeyPair
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      PrivateIpAddress: !Ref OggInstanceIpAddress
+      SubnetId: !Ref PrivateSubnetAZ1
+      SecurityGroupIds:
+        - !Ref SecurityGroup
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeType: gp3
+            DeleteOnTermination: false
+            VolumeSize: 250
+
+Outputs:
+  VPC:
+    Description: A reference to the created VPC
+    Value: !Ref VPC
+    Export:
+      Name: !Sub ${AWS::StackName}-VPC
+
+  PublicSubnetAZ1:
+    Description: A reference to the created PublicSubnetAZ1
+    Value: !Ref PublicSubnetAZ1
+    Export:
+      Name: !Sub ${AWS::StackName}-PublicSubnetAZ1
+
+  PublicSubnetAZ2:
+    Description: A reference to the created PublicSubnetAZ2
+    Value: !Ref PublicSubnetAZ2
+    Export:
+      Name: !Sub ${AWS::StackName}-PublicSubnetAZ2
+
+  IntraSubnetAZ1:
+    Description: A reference to the created IntraSubnetAZ1
+    Value: !Ref IntraSubnetAZ1
+    Export:
+      Name: !Sub ${AWS::StackName}-IntraSubnetAZ1
+
+  IntraSubnetAZ2:
+    Description: A reference to the created IntraSubnetAZ2
+    Value: !Ref IntraSubnetAZ2
+    Export:
+      Name: !Sub ${AWS::StackName}-IntraSubnetAZ2
+
+  NetworkLoadBalancer:
+    Description: A reference to the created NetworkLoadBalancer
+    Value: !Ref NetworkLoadBalancer
+    Export:
+      Name: !Sub ${AWS::StackName}-NetworkLoadBalancer
