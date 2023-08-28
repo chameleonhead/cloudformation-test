@@ -1,0 +1,118 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Parameters:
+  ResourcePrefix:
+    Description: Prefix of resource name.
+    Type: String
+    Default: rdss3
+  Username:
+    Description: DB mater username.
+    Type: String
+    Default: admin
+  Password:
+    Description: DB mater user password. (Only printable ASCII characters besides '/', '@', '"', ' ' may be used)
+    Type: String
+    Default: "Passw0rd"
+    NoEcho: true
+
+Resources:
+  # IAM Role for enhanced monitoring
+  RDSMonitoringRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ResourcePrefix}-rds-monitoring-role
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: monitoring.rds.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonRDSEnhancedMonitoringRole
+
+  DbLogGroupAlert:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/rds/instance/database-1/alert
+      RetentionInDays: 1
+
+  DbLogGroupAudit:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/rds/instance/database-1/audit
+      RetentionInDays: 1
+
+  DbLogGroupListener:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/rds/instance/database-1/listener
+      RetentionInDays: 1
+
+  DbLogGroupTrace:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/rds/instance/database-1/trace
+      RetentionInDays: 1
+
+  DbLogGroupOemagent:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/rds/instance/database-1/oemagent
+      RetentionInDays: 1
+
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupName: !Sub ${ResourcePrefix}-db-subnet-group
+      DBSubnetGroupDescription: !Sub ${ResourcePrefix}-db-subnet-group
+      SubnetIds:
+        - !ImportValue rdss3-vpc-PrivateSubnetAZ1
+        - !ImportValue rdss3-vpc-PrivateSubnetAZ2
+      Tags:
+        - Key: Name
+          Value: !Sub ${ResourcePrefix}-db-subnet-group
+
+  RDSInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      Engine: oracle-se2
+      LicenseModel: license-included
+      EngineVersion: 19.0.0.0.ru-2023-07.rur-2023-07.r1
+      DBInstanceIdentifier: database-1
+      MasterUsername: !Ref Username
+      MasterUserPassword: !Ref Password
+      DBInstanceClass: db.t3.small #db.m5.large
+      StorageType: io1
+      AllocatedStorage: "100"
+      Iops: 3000
+      MaxAllocatedStorage: 1000
+      MultiAZ: false
+      NetworkType: IPV4
+      PubliclyAccessible: false
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      VPCSecurityGroups:
+        - !ImportValue rdss3-vpc-VPCDefaultSecurityGroup
+      CACertificateIdentifier: rds-ca-2019
+      Port: "1521"
+      PerformanceInsightsRetentionPeriod: 7
+      # PerformanceInsightsKMSKeyId: aws/rds
+      MonitoringInterval: 60
+      MonitoringRoleArn: !GetAtt RDSMonitoringRole.Arn
+      CharacterSetName: AL32UTF8
+      BackupRetentionPeriod: 7
+      # PreferredBackupWindow: '00:00-00:30'
+      StorageEncrypted: true
+      KmsKeyId: alias/aws/rds
+      EnablePerformanceInsights: true
+      EnableCloudwatchLogsExports:
+        - alert
+        - audit
+        - listener
+        - trace
+        - oemagent
+      AutoMinorVersionUpgrade: true
+      # PreferredMaintenanceWindow: 'sun:05:00-sun:05:30'
+      DeletionProtection: false
