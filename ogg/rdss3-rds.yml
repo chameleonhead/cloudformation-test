@@ -76,6 +76,12 @@ Resources:
           Value: !Sub ${ResourcePrefix}-db-subnet-group
 
   RDSInstance:
+    DependsOn:
+      - DbLogGroupAlert
+      - DbLogGroupAudit
+      - DbLogGroupListener
+      - DbLogGroupTrace
+      - DbLogGroupOemagent
     Type: AWS::RDS::DBInstance
     Properties:
       Engine: oracle-se2
