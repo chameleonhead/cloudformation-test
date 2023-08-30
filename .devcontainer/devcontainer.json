@@ -15,7 +15,18 @@
 		"ghcr.io/devcontainers/features/node:1": {},
 		"ghcr.io/devcontainers/features/python:1": {}
 	},
-	"privileged": true
+	"privileged": true,
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"donjayamanne.git-extension-pack",
+				"mhutchie.git-graph",
+				"GitHub.copilot",
+				"redhat.vscode-yaml",
+				"redhat.vscode-xml"
+			]
+		}
+	}
 
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},
