@@ -10,20 +10,20 @@ services:
   source-ogg:
     platform: linux/x86_64
     build:
-      context: ./docker/ogg19c
-      dockerfile: Dockerfile
-      args:
-        OGG_VERSION: 19.1.0.0.1
-        OGG_TARFILE: 191001_fbo_ggs_Linux_x64_shiphome.tar
-        OGG_EDITION: standard
-  target-ogg:
-    platform: linux/x86_64
-    build:
-      context: ./docker/ogg19c
+      context: ./docker/ogg19c-ma
       dockerfile: Dockerfile
       args:
         OGG_VERSION: 19.1.0.0.1
         OGG_TARFILE: 191001_fbo_ggs_Linux_x64_services_shiphome.tar
+        OGG_EDITION: standard
+  target-ogg:
+    platform: linux/x86_64
+    build:
+      context: ./docker/ogg19c-ca
+      dockerfile: Dockerfile
+      args:
+        OGG_VERSION: 19.1.0.0.1
+        OGG_TARFILE: 191001_fbo_ggs_Linux_x64_shiphome.tar
         OGG_EDITION: standard
   target-db:
     platform: linux/x86_64
