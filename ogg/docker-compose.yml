@@ -5,13 +5,14 @@ services:
     build:
       context: ./docker/oracle12c
       dockerfile: Dockerfile.ee
+      args:
+        DB_EDITION: EE
   source-ogg:
     platform: linux/x86_64
     build:
       context: ./docker/ogg19c
       dockerfile: Dockerfile
       args:
-        BASE_IMAGE: ghcr.io/oracle/oraclelinux8-instantclient:21
         OGG_VERSION: 19.1.0.0.1
         OGG_TARFILE: 191001_fbo_ggs_Linux_x64_shiphome.tar
         OGG_EDITION: standard
@@ -22,7 +23,7 @@ services:
       dockerfile: Dockerfile
       args:
         OGG_VERSION: 19.1.0.0.1
-        OGG_TARFILE: 191001_fbo_ggs_Linux_x64_shiphome.tar
+        OGG_TARFILE: 191001_fbo_ggs_Linux_x64_services_shiphome.tar
         OGG_EDITION: standard
   target-db:
     platform: linux/x86_64
