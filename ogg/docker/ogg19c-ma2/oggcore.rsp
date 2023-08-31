@@ -1,0 +1,84 @@
+
+######################################################################
+## Copyright(c) Oracle Corporation 2016, 2019. All rights reserved. ##
+##                                                                  ##
+## Specify values for the variables listed below to customize       ##
+## your installation.                                               ##
+##                                                                  ##
+## Each variable is associated with a comment. The comment          ##
+## can help to populate the variables with the appropriate          ##
+## values.                                                          ##
+##                                                                  ##
+## IMPORTANT NOTE: This file should be secured to have read         ##
+## permission only by the Oracle user or an administrator who       ##
+## owns this installation to protect any sensitive input values.    ##
+##                                                                  ##
+######################################################################
+
+#-------------------------------------------------------------------------------
+# Do not change the following system generated value.
+#-------------------------------------------------------------------------------
+oracle.install.responseFileVersion=/oracle/install/rspfmt_ogginstall_response_schema_v19_1_0
+
+
+################################################################################
+##                                                                            ##
+## Oracle GoldenGate installation option and details                          ##
+##                                                                            ##
+################################################################################
+
+#-------------------------------------------------------------------------------
+# Specify the installation option.
+# Specify ORA19c for installing Oracle GoldenGate for Oracle Database 19c and
+#         ORA18c for installing Oracle GoldenGate for Oracle Database 18c and
+#         ORA12c for installing Oracle GoldenGate for Oracle Database 12c and
+#         ORA11g for installing Oracle GoldenGate for Oracle Database 11g
+#-------------------------------------------------------------------------------
+INSTALL_OPTION=ORA19c
+
+#-------------------------------------------------------------------------------
+# Specify a location to install Oracle GoldenGate
+#-------------------------------------------------------------------------------
+SOFTWARE_LOCATION=/u01/app/ogg
+
+#-------------------------------------------------------------------------------
+# Specify true to start the manager after installation.
+# Valid only for legacy installation.
+#-------------------------------------------------------------------------------
+START_MANAGER=false
+
+#-------------------------------------------------------------------------------
+# Specify a free port within the valid range for the manager process.
+# Required only if START_MANAGER is true.
+# Valid only for legacy installation.
+#-------------------------------------------------------------------------------
+MANAGER_PORT=Not applicable for a Services installation.
+
+#-------------------------------------------------------------------------------
+# Specify the location of the Oracle Database.
+# Required only if START_MANAGER is true.
+# Valid only for legacy installation.
+#-------------------------------------------------------------------------------
+DATABASE_LOCATION=Not applicable for a Services installation.
+
+
+################################################################################
+##                                                                            ##
+## Specify details to Create inventory for Oracle installs                    ##
+## Required only for the first Oracle product install on a system.            ##
+##                                                                            ##
+################################################################################
+
+#-------------------------------------------------------------------------------
+# Specify the location which holds the install inventory files.
+# This is an optional parameter if installing on
+# Windows based Operating System.
+#-------------------------------------------------------------------------------
+INVENTORY_LOCATION=/u01/oraInventory
+
+#-------------------------------------------------------------------------------
+# Unix group to be set for the inventory directory.
+# This parameter is not applicable if installing on
+# Windows based Operating System.
+#-------------------------------------------------------------------------------
+UNIX_GROUP_NAME=oinstall
