@@ -47,7 +47,7 @@ RUN yum install -y \
 #         java-11-openjdk-headless
 # RUN yum groupinstall -y 'Development Tools' --setopt=group_package_types=mandatory
 
-COPY LINUX.X64_193000_client.zip client_install.rsp 191001_fbo_ggs_Linux_x64_services_shiphome.zip oggcore.rsp /tmp/orainstall/
+COPY LINUX.X64_193000_client.zip client_install.rsp 191001_fbo_ggs_Linux_x64_services_shiphome.zip oggcore.rsp oggca.rsp /tmp/orainstall/
 
 # Oracle Database Client 19c の配置
 # https://docs.oracle.com/cd/F19136_01/lacli/running-oracle-universal-installer-to-install-oracle-database-client.html#GUID-DB056013-736D-4A7A-8C98-607103E2F07F
@@ -64,14 +64,21 @@ RUN mkdir -p /u01/stage/oggsc && \
 RUN groupadd -g 54321 oinstall && \
     useradd  -u 54321 -g oinstall oracle && \
     mkdir -p /u01/app/oraInventory && \
+    mkdir -p /u02/ogg && \
     chown -R oracle:oinstall /u01/stage && \
-    chown -R oracle:oinstall /u01/app
+    chown -R oracle:oinstall /u01/app && \
+    chown -R oracle:oinstall /u02/ogg
 
 # oracle ユーザーに sudo 権限を付与 (コンテナでの動作確認用)
 RUN yum install -y passwd && echo oracle | passwd --stdin oracle && usermod -aG wheel oracle
 
 ENV JAVA_HOME=/usr/lib/jvm/jre \
-    PATH=$JAVA_HOME/bin:$PATH
+    ORACLE_HOME=/u01/app/oracle/product/19.3.0/client_1 \
+    OGG_HOME=/u01/app/ogg
+ENV LD_LIBRARY_PATH=$OGG_HOME/lib:$ORACLE_HOME/instantclient \
+    PATH=$OGG_HOME/bin:$ORACLE_HOME/bin:$JAVA_HOME/bin:$PATH \
+    OGG_ETC_HOME=/u02/ogg/etc \
+    OGG_VAR_HOME=/u02/ogg/var
 
 USER oracle
 
@@ -83,7 +90,18 @@ USER oracle
 
 # Oracle GoldenGate Microservices Architecture のインストール
 RUN /u01/stage/oggsc/fbo_ggs_Linux_x64_services_shiphome/Disk1/runInstaller -silent -waitForCompletion -responseFile /tmp/orainstall/oggcore.rsp
+USER root
+RUN /u01/app/oraInventory/orainstRoot.sh
+USER oracle
 
-ENV ORACLE_HOME=/u01/app/oracle/product/19.3.0/client_1 \
-    OGG_HOME=/u01/app/ogg \
-    PATH=$ORACLE_HOME/bin:$OGG_HOME/bin:$PATH
+# Deployment の作成
+RUN /u01/app/ogg/bin/oggca.sh -silent -responseFile /tmp/orainstall/oggca.rsp
+
+EXPOSE 11000
+EXPOSE 11001
+EXPOSE 11002
+EXPOSE 11003
+EXPOSE 11004
+EXPOSE 11005
+
+CMD [ "ServiceManager" ]
