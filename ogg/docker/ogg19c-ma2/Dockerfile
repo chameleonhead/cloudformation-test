@@ -41,11 +41,7 @@ RUN yum install -y \
         policycoreutils-python-utils \
         smartmontools \
         sysstat
-# 簡略のためなら以下でもいいかも？(未検証)
-# RUN yum install -y \
-#         sudo \
-#         java-11-openjdk-headless
-# RUN yum groupinstall -y 'Development Tools' --setopt=group_package_types=mandatory
+ENV JAVA_HOME=/usr/lib/jvm/jre
 
 COPY LINUX.X64_193000_client.zip client_install.rsp 191001_fbo_ggs_Linux_x64_services_shiphome.zip oggcore.rsp oggca.rsp /tmp/orainstall/
 
@@ -62,46 +58,50 @@ RUN mkdir -p /u01/stage/oggsc && \
 
 # oracle ユーザーの作成
 RUN groupadd -g 54321 oinstall && \
-    useradd  -u 54321 -g oinstall oracle && \
-    mkdir -p /u01/app/oraInventory && \
-    mkdir -p /u02/ogg && \
-    chown -R oracle:oinstall /u01/stage && \
-    chown -R oracle:oinstall /u01/app && \
-    chown -R oracle:oinstall /u02/ogg
-
+    useradd  -u 54321 -g oinstall oracle
+    
 # oracle ユーザーに sudo 権限を付与 (コンテナでの動作確認用)
 RUN yum install -y passwd && echo oracle | passwd --stdin oracle && usermod -aG wheel oracle
 
-ENV JAVA_HOME=/usr/lib/jvm/jre \
-    ORACLE_HOME=/u01/app/oracle/product/19.3.0/client_1 \
-    OGG_HOME=/u01/app/ogg
-ENV LD_LIBRARY_PATH=$OGG_HOME/lib:$ORACLE_HOME/instantclient \
-    PATH=$OGG_HOME/bin:$ORACLE_HOME/bin:$JAVA_HOME/bin:$PATH \
-    OGG_ETC_HOME=/u02/ogg/etc \
-    OGG_VAR_HOME=/u02/ogg/var
-
-USER oracle
-
 # Oracle Database Client 19c のインストール
+USER root
+RUN chown -R oracle:oinstall /u01/stage && \
+    mkdir -p /u01/app/oraInventory && \
+    chown -R oracle:oinstall /u01/app
+USER oracle
 RUN /u01/stage/clientsc/client/runInstaller -silent -waitForCompletion -responseFile /tmp/orainstall/client_install.rsp || true
 USER root
 RUN /u01/app/oraInventory/orainstRoot.sh
 USER oracle
+ENV ORACLE_HOME=/u01/app/oracle/product/19.3.0/client_1 \
+    PATH=/u01/app/oracle/product/19.3.0/client_1/bin:$PATH
 
 # Oracle GoldenGate Microservices Architecture のインストール
 RUN /u01/stage/oggsc/fbo_ggs_Linux_x64_services_shiphome/Disk1/runInstaller -silent -waitForCompletion -responseFile /tmp/orainstall/oggcore.rsp
-USER root
-RUN /u01/app/oraInventory/orainstRoot.sh
-USER oracle
+ENV OGG_HOME=/u01/app/ogg \
+    PATH=/u01/app/ogg/bin:$PATH
 
 # Deployment の作成
+USER root
+RUN mkdir -p /u02/ogg && \
+    chown -R oracle:oinstall /u02/ogg
+USER oracle
 RUN /u01/app/ogg/bin/oggca.sh -silent -responseFile /tmp/orainstall/oggca.rsp
 
+# Service Manager
 EXPOSE 11000
+# Administration server
 EXPOSE 11001
+# Distribution server
 EXPOSE 11002
+# Receiver server
 EXPOSE 11003
+# Performance Metrics server (TCP)
 EXPOSE 11004
+# Performance Metrics server (UDP)
 EXPOSE 11005
 
-CMD [ "ServiceManager" ]
+COPY --chown=oracle:oinstall runOgg.sh /docker-entrypoint-initdb.d/
+RUN chmod a+x /docker-entrypoint-initdb.d/runOgg.sh
+WORKDIR /docker-entrypoint-initdb.d
+CMD [ "/docker-entrypoint-initdb.d/runOgg.sh" ]
