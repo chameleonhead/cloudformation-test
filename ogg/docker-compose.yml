@@ -3,28 +3,27 @@ services:
   source-db:
     platform: linux/x86_64
     build:
-      context: ./docker/oracle12c
-      dockerfile: Dockerfile.ee
+      context: ./docker/oracle19c
+      dockerfile: Dockerfile
       args:
-        DB_EDITION: EE
-  source-ogg:
+        DB_EDITION: SE2
+    volumes:
+      - ./docker/oracle19c/scripts:/opt/oracle/scripts/setup
+      - ./docker/oracle19c/data/source-oradata:/opt/oracle/oradata
+  target-ogg:
     platform: linux/x86_64
     build:
       context: ./docker/ogg19c-ma
       dockerfile: Dockerfile
-      args:
-        OGG_VERSION: 19.1.0.0.1
-        OGG_TARFILE: 191001_fbo_ggs_Linux_x64_services_shiphome.tar
-        OGG_EDITION: standard
-  target-ogg:
-    platform: linux/x86_64
-    build:
-      context: ./docker/ogg19c-ca
-      dockerfile: Dockerfile
-      args:
-        OGG_VERSION: 19.1.0.0.1
-        OGG_TARFILE: 191001_fbo_ggs_Linux_x64_shiphome.tar
-        OGG_EDITION: standard
+    ports:
+      - 7809:7809
+      - 9000:9000
+      - 11000:11000
+      - 11001:11001
+      - 11002:11002
+      - 11003:11003
+      - 11004:11004
+      - 11005:11005
   target-db:
     platform: linux/x86_64
     build:
@@ -32,3 +31,5 @@ services:
       dockerfile: Dockerfile
       args:
         DB_EDITION: SE2
+    volumes:
+      - ./docker/oracle19c/data/target-oradata:/opt/oracle/oradata

@@ -1,128 +1,107 @@
-# LICENSE UPL 1.0
-#
-# Copyright (c) 2014, 2021 Oracle and/or its affiliates.
-#
-#
-# Container image template for Oracle Instant Client
-#
-# REQUIRED FILES TO BUILD THIS IMAGE
-# ==================================
-# 
-# From http://www.oracle.com/technetwork/topics/linuxx86-64soft-092277.html
-#  Download the following three RPMs:
-#    - oracle-instantclient12.2-basic-12.2.0.1.0-1.x86_64.rpm
-#    - oracle-instantclient12.2-devel-12.2.0.1.0-1.x86_64.rpm
-#    - oracle-instantclient12.2-sqlplus-12.2.0.1.0-1.x86_64.rpm 
-#
-# HOW TO BUILD THIS IMAGE
-# -----------------------
-# Put all downloaded files in the same directory as this Dockerfile
-# Run: 
-#      $ docker build --pull -t oraclelinux7-instantclient:12.2 .
-#      $ docker run -ti --rm oraclelinux7-instantclient:12.2 sqlplus -l /nolog
-#
+FROM centos:7
+# Cent OS 9 で実行しようとしたところ、Oracle Database Client のインストールでエラーとなった。
+# 解決方法がわからないので、Cent OS 7 に変更。
+# FROM quay.io/centos/centos:stream9
 
-FROM oraclelinux:7-slim
+USER root
 
-ADD oracle-instantclient*.rpm /tmp/
+# Oracle のインストーラーに入っている jre は GUI の表示でエラーになることがあったので
+# ディストリビューションの java をインストールし、JAVA_HOME を設定することで
+# 回避している。
+RUN yum install -y \
+        sudo \
+        unzip \
+        java-11-openjdk-headless \
+        # Oracle Database Client 19c のインストールに必要なパッケージ
+        # https://docs.oracle.com/cd/F19136_01/lacli/supported-oracle-linux-8-distributions-for-x86-64.html#GUID-F4902762-325B-4C89-B85B-F52BA482190F
+        bc \
+        binutils \
+        elfutils-libelf \
+        elfutils-libelf-devel \
+        fontconfig-devel \
+        glibc \
+        glibc-devel \
+        ksh \
+        libaio \
+        libaio-devel \
+        libXrender \
+        libX11 \
+        libXau \
+        libXi \
+        libXtst \
+        libgcc \
+        libnsl \
+        librdmacm \
+        libstdc++ \
+        libstdc++-devel \
+        libxcb \
+        libibverbs \
+        make \
+        policycoreutils \
+        policycoreutils-python-utils \
+        smartmontools \
+        sysstat
+ENV JAVA_HOME=/usr/lib/jvm/jre
 
-RUN  yum -y install /tmp/oracle-instantclient*.rpm && \
-     rm -rf /var/cache/yum && \
-     rm -f /tmp/oracle-instantclient*.rpm && \
-     echo /usr/lib/oracle/12.2/client64/lib > /etc/ld.so.conf.d/oracle-instantclient12.2.conf && \
-     ldconfig
+COPY LINUX.X64_193000_client.zip client_install.rsp 191001_fbo_ggs_Linux_x64_services_shiphome.zip oggcore.rsp oggca.rsp /tmp/orainstall/
 
-ENV PATH=$PATH:/usr/lib/oracle/12.2/client64/bin
+# Oracle Database Client 19c の配置
+# https://docs.oracle.com/cd/F19136_01/lacli/running-oracle-universal-installer-to-install-oracle-database-client.html#GUID-DB056013-736D-4A7A-8C98-607103E2F07F
+# LINUX.X64_193000_client.zip を展開すると client/runInstaller が現れる
+RUN mkdir -p /u01/stage/clientsc && \
+    unzip -q /tmp/orainstall/LINUX.X64_193000_client.zip -d /u01/stage/clientsc
 
-# Copyright (c) 2017 Oracle and/or its affiliates.  All rights reserved.
-# Licensed under the Universal Permissive License v 1.0 as shown at http://oss.oracle.com/licenses/upl.
+# Oracle GoldenGate Microservices Architecture の配置
+# https://docs.oracle.com/cd/F22974_01/installing/installing-microservices-architecture-oracle-goldengate.html#GUID-2E805D77-8362-460A-BA61-D267FC303863
+RUN mkdir -p /u01/stage/oggsc && \
+    unzip /tmp/orainstall/191001_fbo_ggs_Linux_x64_services_shiphome.zip -d /u01/stage/oggsc
 
-#
-# ORACLE GOLDENGATE DOCKER PROJECT
-# --------------------------------
-#
-# Dockerfile for Oracle GoldenGate
-#
-# REQUIRED FILES TO BUILD THIS IMAGE
-# ----------------------------------
-#
-# From http://www.oracle.com/technetwork/middleware/goldengate/downloads/index.html
-#  Download the file for "Oracle GoldenGate 12.x.x.x.x for Oracle on Linux x86-64"
-#    - fbo_ggs_Linux_x64_shiphome.zip
-#
-# HOW TO BUILD THIS IMAGE
-# -----------------------
-#
-# Execute the "dockerBuild.sh" shell script, with the name of the downloaded OGG filename.
-# Example:
-#      $ ./dockerBuild.sh ~/Downloads/fbo_ggs_Linux_x64_shiphome.zip
-#
-#
-# ARG         BASE_IMAGE=oracle/instantclient:12.2.0.1
-# FROM      ${BASE_IMAGE}
-LABEL       Description="Oracle GoldenGate on Docker" \
-            Maintainer="Stephen Balousek <stephen.balousek@oracle.com>"
-USER        root
+# oracle ユーザーの作成
+RUN groupadd -g 54321 oinstall && \
+    useradd  -u 54321 -g oinstall oracle
+    
+# oracle ユーザーに sudo 権限を付与 (コンテナでの動作確認用)
+RUN yum install -y passwd && echo oracle | passwd --stdin oracle && usermod -aG wheel oracle
 
-ARG         OGG_VERSION
-ARG         OGG_EDITION
-ARG         OGG_TARFILE
-ARG         BASE_COMMAND
+# Oracle Database Client 19c のインストール
+USER root
+RUN chown -R oracle:oinstall /u01/stage && \
+    mkdir -p /u01/app/oraInventory && \
+    chown -R oracle:oinstall /u01/app
+USER oracle
+RUN /u01/stage/clientsc/client/runInstaller -silent -waitForCompletion -responseFile /tmp/orainstall/client_install.rsp || true
+USER root
+RUN /u01/app/oraInventory/orainstRoot.sh
+USER oracle
+ENV ORACLE_HOME=/u01/app/oracle/product/19.3.0/client_1 \
+    PATH=/u01/app/oracle/product/19.3.0/client_1/bin:$PATH
 
-ENV         JAVA_HOME=/usr/lib/jvm/jre \
-            OGG_HOME=/u01/app/ogg \
-            OGG_DEPLOY_BASE=/u02/ogg \
-            PATH=/u01/app/ogg:/u01/app/ogg/bin:/usr/lib/jvm/jre/bin:${PATH} \
-            LD_LIBRARY_PATH=/usr/lib/jvm/jre/lib/amd64/server:${LD_LIBRARY_PATH} \
-            OGG_VERSION=${OGG_VERSION} \
-            OGG_EDITION=${OGG_EDITION} \
-            BASE_COMMAND=${BASE_COMMAND}
+# Oracle GoldenGate Microservices Architecture のインストール
+RUN /u01/stage/oggsc/fbo_ggs_Linux_x64_services_shiphome/Disk1/runInstaller -silent -waitForCompletion -responseFile /tmp/orainstall/oggcore.rsp
+ENV OGG_HOME=/u01/app/ogg \
+    PATH=/u01/app/ogg/bin:$PATH
 
-ADD         ${OGG_TARFILE} ${OGG_HOME}/
-COPY        runOracleGoldenGate.sh /
-COPY        bin/* /usr/local/bin/
+# Deployment の作成
+USER root
+RUN mkdir -p /u02/ogg && \
+    chown -R oracle:oinstall /u02/ogg
+USER oracle
+RUN /u01/app/ogg/bin/oggca.sh -silent -responseFile /tmp/orainstall/oggca.rsp
 
-#
-# Initial setup
-# - This image will be smaller if the oracle:oinstall user has the numeric identifiers 54321:54321
-# - 'vi' is used by the Oracle GoldenGate 'ggsci' utility to edit parameter
-#    files and must be run from inside the container.
-# - Installation of additional software packages depends on the value of ${OGG_EDITION}
-#
-RUN         if [[ -z "${OGG_VERSION}" || -z "${OGG_EDITION}" || -z "${OGG_TARFILE}" ]]; then \
-                echo "----------------------------------------------------------------------------------" && \
-                echo "-- Missing build argument for Dockerfile. See README.md for usage instructions. --" && \
-                echo "----------------------------------------------------------------------------------" && \
-                exit 1; \
-            fi; \
-            groupadd -g 54321    oinstall        || /bin/true; \
-            useradd  -u 54321 -g oinstall oracle || /bin/true; \
-            chown oracle:oinstall ${OGG_HOME}; \
-            if [[ $(find ${OGG_HOME} -mindepth 1 -maxdepth 1 -user 54321 -group 54321 2>/dev/null | wc -l) == "0" ]]; then \
-                echo "----------------------------------------------------------------------------------" && \
-                echo "-- OGG_TARFILE '${OGG_TARFILE}' not using UID:GID of 54321:54321"                   && \
-                echo "-- Resulting Docker image will be larger than necessary.                        --" && \
-                echo "----------------------------------------------------------------------------------" && \
-                chown -R oracle:oinstall ${OGG_HOME}; \
-            fi; \
-            . /etc/os-release && MAJOR_VERSION="${VERSION/.*/}"; \
-            yum-config-manager --enable ol${MAJOR_VERSION}_optional_latest; \
-            yum -y install oracle-softwarecollection-release-el${MAJOR_VERSION}; \
-            [[ -x /usr/bin/ol_yum_configure.sh ]] && /usr/bin/ol_yum_configure.sh; \
-            if [[ "${OGG_EDITION}" == "standard" ]]; then \
-                yum -y install util-linux vi java-1.8.0-openjdk-headless && \
-                rm -rf /var/cache/yum; \
-            fi; \
-            if [[ "${OGG_EDITION}" == "microservices" ]]; then \
-                yum -y --enablerepo ol${MAJOR_VERSION}_software_collections install openssl rh-nginx118 java-1.8.0-openjdk-headless python-requests && \
-                rm -rf /var/cache/yum && \
-                ln -s /etc/opt/rh/rh-nginx118/nginx /etc/nginx && \
-                sh /etc/ssl/certs/make-dummy-cert  /etc/nginx/ogg.pem && \
-                mkdir -p              ${OGG_DEPLOY_BASE} && \
-                chown oracle:oinstall ${OGG_DEPLOY_BASE}; \
-            fi;
+# Service Manager
+EXPOSE 11000
+# Administration server
+EXPOSE 11001
+# Distribution server
+EXPOSE 11002
+# Receiver server
+EXPOSE 11003
+# Performance Metrics server (TCP)
+EXPOSE 11004
+# Performance Metrics server (UDP)
+EXPOSE 11005
 
-EXPOSE      443
-VOLUME     ["${OGG_DEPLOY_BASE}" ]
-WORKDIR     "${OGG_HOME}"
-ENTRYPOINT ["/runOracleGoldenGate.sh"]
+COPY --chown=oracle:oinstall runOgg.sh /docker-entrypoint-initdb.d/
+RUN chmod a+x /docker-entrypoint-initdb.d/runOgg.sh
+WORKDIR /docker-entrypoint-initdb.d
+CMD [ "/docker-entrypoint-initdb.d/runOgg.sh" ]
