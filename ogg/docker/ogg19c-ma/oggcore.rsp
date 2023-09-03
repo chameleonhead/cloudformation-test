@@ -39,7 +39,7 @@ INSTALL_OPTION=ORA19c
 #-------------------------------------------------------------------------------
 # Specify a location to install Oracle GoldenGate
 #-------------------------------------------------------------------------------
-SOFTWARE_LOCATION=/u01/app/ogg
+SOFTWARE_LOCATION=/opt/oracle/product/19.1.0/oggcore_1
 
 #-------------------------------------------------------------------------------
 # Specify true to start the manager after installation.
@@ -74,7 +74,7 @@ DATABASE_LOCATION=Not applicable for a Services installation.
 # This is an optional parameter if installing on
 # Windows based Operating System.
 #-------------------------------------------------------------------------------
-INVENTORY_LOCATION=/u01/app/oraInventory
+INVENTORY_LOCATION=/opt/oraInventory
 
 #-------------------------------------------------------------------------------
 # Unix group to be set for the inventory directory.

@@ -66,7 +66,7 @@ DEPLOYMENT_NAME=Local
 #-------------------------------------------------------------------------------
 # Specify the administrator account username.
 #-------------------------------------------------------------------------------
-ADMINISTRATOR_USER=admin
+ADMINISTRATOR_USER=oggadmin
 
 #-------------------------------------------------------------------------------
 # Specify the administrator account password.
@@ -84,7 +84,7 @@ ADMINISTRATOR_PASSWORD=P@ssw0rd
 # Specify the location for the Service Manager deployment.
 # This is only needed if the Service Manager deployment doesn't exist already.
 #-------------------------------------------------------------------------------
-SERVICEMANAGER_DEPLOYMENT_HOME=/u02/ogg/ServiceManager
+SERVICEMANAGER_DEPLOYMENT_HOME=/opt/oracle/ogg_deployments/Local/ServiceManager
 
 #-------------------------------------------------------------------------------
 # Specify the host for the Service Manager.
@@ -150,7 +150,7 @@ EXISTING_SERVICEMANAGER_IS_XAG_ENABLED=false
 #-------------------------------------------------------------------------------
 # Specify the existing OGG software home location.
 #-------------------------------------------------------------------------------
-OGG_SOFTWARE_HOME=/u01/app/ogg
+OGG_SOFTWARE_HOME=/opt/oracle/product/19.1.0/oggcore_1
 
 
 ###############################################################################
@@ -162,7 +162,7 @@ OGG_SOFTWARE_HOME=/u01/app/ogg
 #-------------------------------------------------------------------------------
 # Specify the location of the new or existing OGG deployment.
 #-------------------------------------------------------------------------------
-OGG_DEPLOYMENT_HOME=/u02/ogg
+OGG_DEPLOYMENT_HOME=/opt/oracle/ogg_deployments/Local
 
 #-------------------------------------------------------------------------------
 # Specify the location for OGG_ETC_HOME.
@@ -199,12 +199,12 @@ OGG_DATA_HOME=
 #-------------------------------------------------------------------------------
 # Specify the value for the ORACLE_HOME environment variable.
 #-------------------------------------------------------------------------------
-ENV_ORACLE_HOME=/u01/app/oracle/product/19.3.0/client_1
+ENV_ORACLE_HOME=/opt/oracle/product/19.3.0/client_1
 
 #-------------------------------------------------------------------------------
 # Specify the value for the LD_LIBRARY_PATH environment variable.
 #-------------------------------------------------------------------------------
-ENV_LD_LIBRARY_PATH=${ORACLE_HOME}/lib
+ENV_LD_LIBRARY_PATH=${OGG_HOME}/lib
 
 #-------------------------------------------------------------------------------
 # Specify the value for the TNS_ADMIN environment variable.
@@ -390,7 +390,7 @@ PMSRVR_DATASTORE_TYPE=BDB
 # Specify the DataStore home location for Performance Metrics server.
 # This is optional and only takes effect when Performance Metrics server will be enabled.
 #-------------------------------------------------------------------------------
-PMSRVR_DATASTORE_HOME=/u02/ogg/DataStore
+PMSRVR_DATASTORE_HOME=/opt/oracle/ogg_deployments/Local/DataStore
 
 
 ###############################################################################

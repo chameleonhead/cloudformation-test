@@ -23,15 +23,15 @@ UNIX_GROUP_NAME=oinstall
 #-------------------------------------------------------------------------------
 # Inventory location.
 #-------------------------------------------------------------------------------
-INVENTORY_LOCATION=/u01/app/oraInventory
+INVENTORY_LOCATION=/opt/oraInventory
 #-------------------------------------------------------------------------------
 # Complete path of the Oracle Home
 #-------------------------------------------------------------------------------  
-ORACLE_HOME=/u01/app/oracle/product/19.3.0/client_1
+ORACLE_HOME=/opt/oracle/product/19.3.0/client_1
 #-------------------------------------------------------------------------------
 # Complete path of the Oracle Base.
 #-------------------------------------------------------------------------------
-ORACLE_BASE=/u01/app/oracle
+ORACLE_BASE=/opt/oracle
 #------------------------------------------------------------------------------
 #Name       : INSTALL_TYPE
 #Datatype   : String

@@ -16,8 +16,6 @@ services:
       context: ./docker/ogg19c-ma
       dockerfile: Dockerfile
     ports:
-      - 7809:7809
-      - 9000:9000
       - 11000:11000
       - 11001:11001
       - 11002:11002
