@@ -62,19 +62,16 @@ RUN groupadd -g 54321 oinstall && \
 RUN yum install -y passwd && echo oracle | passwd --stdin oracle && usermod -aG wheel oracle
 
 # Oracle ユーザーの所有に変更 (インストールディレクトリも設定しないとSegmentation fault が発生する)
-RUN mkdir -p /opt/oraInventory && \
-    mkdir -p /opt/oracle && \
+RUN mkdir -p /opt/oracle && \
     chown -R oracle:oinstall /tmp/orainstall && \
-    chown -R oracle:oinstall /opt/oraInventory && \
     chown -R oracle:oinstall /opt/oracle && \
-    chmod -R 775 /opt/oraInventory && \
     chmod -R 775 /opt/oracle
 
 # Oracle Database Client 19c のインストール
 USER oracle
 RUN /tmp/orainstall/client/runInstaller -silent -waitForCompletion -responseFile /tmp/orainstall/client_install.rsp || true
 USER root
-RUN /opt/oraInventory/orainstRoot.sh
+RUN /opt/oracle/oraInventory/orainstRoot.sh
 USER oracle
 ENV ORACLE_HOME=/opt/oracle/product/19.3.0/client_1 \
     PATH=/opt/oracle/product/19.3.0/client_1/bin:$PATH
