@@ -16,7 +16,7 @@ services:
       context: ./docker/ogg19c-ma
       dockerfile: Dockerfile
     volumes:
-      - ./docker/ogg19c-ma/tns_admin:/opt/oracle/product/19.1.0/client_1/network/admin
+      - ./docker/ogg19c-ma/tns_admin:/opt/oracle/product/19.3.0/client_1/network/admin
     ports:
       - 11000:11000
       - 11001:11001
