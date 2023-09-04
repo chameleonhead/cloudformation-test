@@ -8,7 +8,7 @@ services:
       args:
         DB_EDITION: SE2
     volumes:
-      - ./docker/oracle19c/scripts:/opt/oracle/scripts/setup
+      - ./docker/oracle19c/scripts/setup:/opt/oracle/scripts/setup
       - ./docker/oracle19c/data/source-oradata:/opt/oracle/oradata
   target-ogg:
     platform: linux/x86_64

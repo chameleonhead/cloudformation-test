@@ -97,7 +97,5 @@ EXPOSE 11004
 # Performance Metrics server (UDP)
 EXPOSE 11005
 
-COPY --chown=oracle:oinstall runOgg.sh /docker-entrypoint-initdb.d/
-RUN chmod a+x /docker-entrypoint-initdb.d/runOgg.sh
-WORKDIR /docker-entrypoint-initdb.d
-CMD [ "/docker-entrypoint-initdb.d/runOgg.sh" ]
+COPY docker-entrypoint.sh /
+CMD [ "/docker-entrypoint.sh" ]
