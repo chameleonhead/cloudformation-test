@@ -1,0 +1,7 @@
+Source=(DESCRIPTION =
+    (ADDRESS = (PROTOCOL = TCP)(HOST = source-db)(PORT = 1521))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = ORCLCDB)
+    )
+  )

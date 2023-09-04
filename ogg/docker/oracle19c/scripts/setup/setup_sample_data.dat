@@ -1,0 +1,9 @@
+SET VERIFY ON
+SET DEFINE ON
+alter session set container = ORCLPDB1;
+DEFINE pass = passw0rd
+DEFINE tbs = USERS
+DEFINE overwrite_schema = YES
+BEGIN
+@hr_install.sql;
+END;
