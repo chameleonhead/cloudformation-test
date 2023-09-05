@@ -69,7 +69,7 @@ RUN mkdir -p /opt/oracle && \
 
 # Oracle Database Client 19c のインストール
 USER oracle
-RUN /tmp/orainstall/client/runInstaller -silent -waitForCompletion -responseFile /tmp/orainstall/client_install.rsp || true
+RUN /tmp/orainstall/client/runInstaller -silent -waitForCompletion -ignoreSysPrereqs -responseFile /tmp/orainstall/client_install.rsp || true
 USER root
 RUN /opt/oracle/oraInventory/orainstRoot.sh
 USER oracle
@@ -77,7 +77,7 @@ ENV ORACLE_HOME=/opt/oracle/product/19.3.0/client_1 \
     PATH=/opt/oracle/product/19.3.0/client_1/bin:$PATH
 
 # Oracle GoldenGate Microservices Architecture のインストール
-RUN /tmp/orainstall/fbo_ggs_Linux_x64_services_shiphome/Disk1/runInstaller -silent -waitForCompletion -responseFile /tmp/orainstall/oggcore.rsp
+RUN /tmp/orainstall/fbo_ggs_Linux_x64_services_shiphome/Disk1/runInstaller -silent -waitForCompletion -ignoreSysPrereqs -responseFile /tmp/orainstall/oggcore.rsp
 ENV OGG_HOME=/opt/oracle/product/19.1.0/oggcore_1 \
     PATH=/opt/oracle/product/19.1.0/oggcore_1/bin:$PATH
 
