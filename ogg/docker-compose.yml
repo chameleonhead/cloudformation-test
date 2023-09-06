@@ -7,9 +7,8 @@ services:
       dockerfile: Dockerfile
       args:
         DB_EDITION: SE2
-    shm_size: 2g
     volumes:
-      - ./docker/oracle19c/scripts/setup:/opt/oracle/scripts/setup
+      - ./docker/oracle19c/scripts/source-setup:/opt/oracle/scripts/setup
       - ./docker/oracle19c/data/source-oradata:/opt/oracle/oradata
   target-ogg:
     platform: linux/x86_64
@@ -18,7 +17,7 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./docker/ogg19c-ma/tns_admin:/opt/oracle/product/19.3.0/client_1/network/admin
-      - ./docker/ogg19c-ma/data:/opt/oracle/
+      - ./docker/ogg19c-ma/data:/opt/oracle/ogg_deployments
     ports:
       - 11000:11000
       - 11001:11001
@@ -34,4 +33,5 @@ services:
       args:
         DB_EDITION: SE2
     volumes:
+      - ./docker/oracle19c/scripts/target-setup:/opt/oracle/scripts/setup
       - ./docker/oracle19c/data/target-oradata:/opt/oracle/oradata
