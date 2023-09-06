@@ -6,7 +6,7 @@ services:
       context: ./docker/oracle19c
       dockerfile: Dockerfile
       args:
-        DB_EDITION: SE2
+        DB_EDITION: EE
     volumes:
       - ./docker/oracle19c/scripts/source-setup:/opt/oracle/scripts/setup
       - ./docker/oracle19c/data/source-oradata:/opt/oracle/oradata

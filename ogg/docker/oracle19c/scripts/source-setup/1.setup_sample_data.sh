@@ -1,8 +1,8 @@
-#!/usr/bin/env bash
-ORIGPATH=$(dirname "$0")
-unzip -o $ORIGPATH/db-sample-schemas-main.zip -d $ORIGPATH
-cd $ORIGPATH/db-sample-schemas-main/human_resources
-sqlplus / as sysdba @$ORIGPATH/setup_sample_data.dat << EOF
+#!/bin/bash
+SCRIPTS_ROOT=/opt/oracle/scripts/setup
+unzip -o $SCRIPTS_ROOT/db-sample-schemas-main.zip -d $SCRIPTS_ROOT
+cd $SCRIPTS_ROOT/db-sample-schemas-main/human_resources
+sqlplus / as sysdba @$SCRIPTS_ROOT/setup_sample_data.dat << EOF
 
 
 
