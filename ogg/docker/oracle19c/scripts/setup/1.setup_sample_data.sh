@@ -1,6 +1,6 @@
 #!/bin/bash
 ORIGPATH=$(pwd)
-unzip ./db-sample-schemas-main.zip -d $ORIGPATH
+unzip -o ./db-sample-schemas-main.zip -d $ORIGPATH
 cd $ORIGPATH/db-sample-schemas-main/human_resources
 sqlplus / as sysdba @$ORIGPATH/setup_sample_data.dat << EOF
 
