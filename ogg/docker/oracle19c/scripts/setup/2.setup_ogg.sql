@@ -1,32 +1,32 @@
-SHUTDOWN IMMEDIATE;
-STARTUP MOUNT;
-ALTER DATABSE ACHIVELOG;
-ALTER DATABASE OPEN;
+shutdown immediate;
+startup mount;
+alter databse achivelog;
+alter database open;
 
-ALTER SESSION SET CONTAINER = CDB$ROOT;
-ALTER DATABASE FORCE LOGGING;
-ALTER DATABASE ADD SUPPLEMENTAL LOG DATA;
+-- CDBユーザー権限
+-- https://docs.oracle.com/cd/F51462_01/ggmas/quickstart-your-data-replication-oracle-goldengate-microservices-architecture.html#GUID-FAAAFDB1-FF77-4EF5-A85C-3FBBB832CCD1
+-- CGGNORTH DATABASE SETUP AT CDB LEVEL
+alter session set container=cdb$root;
+alter system set enable_goldengate_replication=TRUE;
+alter system set streams_pool_size=2G;
+alter database force logging;
+alter database add supplemental log data;
+archive log list;
+create tablespace GG_DATA datafile '+DATA' size 100m autoextend on next 100m;
+create user c##ggadmin identified by Password container=all default tablespace GG_DATA temporary tablespace temp;
+grant alter system to c##ggadmin container=all;
+grant dba to c##ggadmin container=all;
+grant create session to c##ggadmin container=all;
+grant alter any table to c##ggadmin container=all;
+grant resource to c##ggadmin container=all;
+exec dbms_goldengate_auth.grant_admin_privilege('c##ggadmin',container=>'all');
 
-CREATE TABLESPACE GG_DATA DATAFILE '/opt/oracle/oradata/ORCLCDB/gg_data.dbf' SIZE 100M AUTOEXTEND ON NEXT 50M MAXSIZE UNLIMITED;
-
-ALTER SESSION SET CONTAINER = ORCLPDB1;
-CREATE TABLESPACE GG_DATA DATAFILE '/opt/oracle/oradata/ORCLCDB/ORCLPDB1/gg_data.dbf' SIZE 100M AUTOEXTEND ON NEXT 50M MAXSIZE UNLIMITED;
-
-ALTER SESSION SET CONTAINER = CDB$ROOT;
-CREATE USER c##ggadmin IDENTIFIED BY passw0rd CONTAINER=all DEFAULT TABLESPACE GG_DATA TEMPORARY TABLESPACE temp;
-GRANT RESOURCE to c##ggadmin;
-GRANT CREATE SESSION to c##ggadmin;
-GRANT CREATE VIEW to c##ggadmin;
-GRANT CREATE TABLE to c##ggadmin;
-GRANT CONNECT to c##ggadmin CONTAINER=all; 
--- GRANT DV_GOLDENGATE_ADMIN; -- for data vault user
--- GRANT DV_GOLDENGATE_REDO_ACCESS; -- for data vault user
-GRANT ALTER SYSTEM to c##ggadmin;
-GRANT ALTER USER to c##ggadmin;
-ALTER USER c##ggadmin SET CONTAINER_DATA=all CONTAINER=current;
-ALTER USER c##ggadmin QUOTA unlimited ON GG_DATA;
-GRANT SELECT ANY DICTIONARY to c##ggadmin;
-GRANT SELECT ANY TRANSACTION to c##ggadmin;
-EXEC DBMS_GOLDENGATE_AUTH.GRANT_ADMIN_PRIVILEGE('c##ggadmin', CONTAINER => 'ALL');
-
-ALTER SYSTEM SET ENABLE_GOLDENGATE_REPLICATION=true SCOPE=both;
+-- ソースPDBユーザー権限(ORCLPDB1)
+alter session set container=ORCLPDB1;
+create tablespace GG_DATA datafile '+DATA' size 100m autoextend on next 100m;
+create user ggadmin identified by Password container=current; 
+grant create session to ggadmin container=current;
+grant alter any table to ggadmin container=current;
+grant resource to ggadmin container=current;
+grant dba to ggadmin container=current;
+exec dbms_goldengate_auth.grant_admin_privilege('ggadmin');
