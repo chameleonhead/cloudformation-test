@@ -84,7 +84,7 @@ ADMINISTRATOR_PASSWORD=P@ssw0rd
 # Specify the location for the Service Manager deployment.
 # This is only needed if the Service Manager deployment doesn't exist already.
 #-------------------------------------------------------------------------------
-SERVICEMANAGER_DEPLOYMENT_HOME=/opt/oracle/ogg_deployments/Local/ServiceManager
+SERVICEMANAGER_DEPLOYMENT_HOME=/opt/oracle/ogg_deployments/ServiceManager
 
 #-------------------------------------------------------------------------------
 # Specify the host for the Service Manager.
@@ -390,7 +390,7 @@ PMSRVR_DATASTORE_TYPE=BDB
 # Specify the DataStore home location for Performance Metrics server.
 # This is optional and only takes effect when Performance Metrics server will be enabled.
 #-------------------------------------------------------------------------------
-PMSRVR_DATASTORE_HOME=/opt/oracle/ogg_deployments/Local/DataStore
+PMSRVR_DATASTORE_HOME=/opt/oracle/ogg_deployments/Local/datastore
 
 
 ###############################################################################

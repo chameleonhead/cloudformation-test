@@ -43,7 +43,9 @@ RUN yum install -y \
     sysstat
 ENV JAVA_HOME=/usr/lib/jvm/jre
 
-COPY LINUX.X64_193000_client.zip client_install.rsp 191001_fbo_ggs_Linux_x64_services_shiphome.zip oggcore.rsp oggca.rsp /tmp/orainstall/
+# インストール用のファイルをコピー
+COPY LINUX.X64_193000_client.zip 191001_fbo_ggs_Linux_x64_services_shiphome.zip /tmp/orainstall/
+COPY client_install.rsp oggcore.rsp oggca.rsp /tmp/orainstall/
 
 # Oracle Database Client 19c の配置
 # https://docs.oracle.com/cd/F19136_01/lacli/running-oracle-universal-installer-to-install-oracle-database-client.html#GUID-DB056013-736D-4A7A-8C98-607103E2F07F
@@ -81,21 +83,16 @@ RUN /tmp/orainstall/fbo_ggs_Linux_x64_services_shiphome/Disk1/runInstaller -sile
 ENV OGG_HOME=/opt/oracle/product/19.1.0/oggcore_1 \
     PATH=/opt/oracle/product/19.1.0/oggcore_1/bin:$PATH
 
-# Deployment の作成
-RUN /opt/oracle/product/19.1.0/oggcore_1/bin/oggca.sh -silent -responseFile /tmp/orainstall/oggca.rsp
+# Deploymentの作成は起動時に実施
+ENV PORT_BASE=11000
 
-# Service Manager
-EXPOSE 11000
-# Administration server
-EXPOSE 11001
-# Distribution server
-EXPOSE 11002
-# Receiver server
-EXPOSE 11003
-# Performance Metrics server (TCP)
-EXPOSE 11004
-# Performance Metrics server (UDP)
-EXPOSE 11005
+# デフォルトでは以下のポートを使用する
+# 11000: Service Manager
+# 11001: Administration server
+# 11002: Distribution server
+# 11003: Receiver server
+# 11004: Performance Metrics server (TCP)
+# 11005: Performance Metrics server (UDP)
 
 COPY docker-entrypoint.sh /
 CMD [ "/docker-entrypoint.sh" ]
