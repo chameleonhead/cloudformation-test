@@ -12,7 +12,7 @@ alter system set streams_pool_size=2G;
 alter database force logging;
 alter database add supplemental log data;
 archive log list;
-create tablespace GG_DATA datafile '+DATA' size 100m autoextend on next 100m;
+create tablespace GG_DATA datafile '/opt/oracle/oradata/ORCLCDB/gg_data.dbf' size 100m autoextend on next 100m;
 create user c##ggadmin identified by Password container=all default tablespace GG_DATA temporary tablespace temp;
 grant alter system to c##ggadmin container=all;
 grant dba to c##ggadmin container=all;
@@ -23,7 +23,7 @@ exec dbms_goldengate_auth.grant_admin_privilege('c##ggadmin',container=>'all');
 
 -- ソースPDBユーザー権限(ORCLPDB1)
 alter session set container=ORCLPDB1;
-create tablespace GG_DATA datafile '+DATA' size 100m autoextend on next 100m;
+create tablespace GG_DATA datafile '/opt/oracle/oradata/ORCLCDB/ORCLPDB1/gg_data.dbf' size 100m autoextend on next 100m;
 create user ggadmin identified by Password container=current; 
 grant create session to ggadmin container=current;
 grant alter any table to ggadmin container=current;
