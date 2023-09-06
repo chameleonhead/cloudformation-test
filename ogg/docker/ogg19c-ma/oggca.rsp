@@ -214,7 +214,7 @@ ENV_TNS_ADMIN=${ORACLE_HOME}/network/admin
 #-------------------------------------------------------------------------------
 # Specify the value for the ORACLE_SID environment variable.
 #-------------------------------------------------------------------------------
-ENV_ORACLE_SID=ORCL
+ENV_ORACLE_SID=ORCLCDB
 
 #-------------------------------------------------------------------------------
 # This option is only needed when Sharding will be enabled.
