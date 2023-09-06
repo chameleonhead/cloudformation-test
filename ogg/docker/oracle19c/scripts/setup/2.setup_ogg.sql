@@ -1,6 +1,6 @@
 shutdown immediate;
 startup mount;
-alter databse achivelog;
+alter databse archivelog;
 alter database open;
 
 -- CDBユーザー権限
