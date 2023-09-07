@@ -44,7 +44,8 @@ RUN yum install -y \
 ENV JAVA_HOME=/usr/lib/jvm/jre
 
 # インストール用のファイルをコピー
-COPY LINUX.X64_193000_client.zip 191001_fbo_ggs_Linux_x64_services_shiphome.zip /tmp/orainstall/
+COPY LINUX.X64_193000_client.zip /tmp/orainstall/
+COPY 191001_fbo_ggs_Linux_x64_services_shiphome.zip /tmp/orainstall/
 COPY client_install.rsp oggcore.rsp oggca.rsp /tmp/orainstall/
 
 # Oracle Database Client 19c の配置
