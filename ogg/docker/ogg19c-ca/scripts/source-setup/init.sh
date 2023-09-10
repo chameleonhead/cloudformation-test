@@ -1,0 +1,34 @@
+ggsci << EOF
+ADD CREDENTIALSTORE
+ALTER CREDENTIALSTORE ADD USER c##ggadmin@SRC_ORCLCDB, PASSWORD passw0rd ALIAS src_cdb
+EOF
+
+mkdir -p $OGG_HOME/dirdat/capture1
+cat <<EOF > $OGG_HOME/dirprm/capture1.prm
+EXTRACT capture1
+USERIDALIAS src_cdb
+EXTTRAIL $OGG_HOME/dirdat/capture1/lt
+TABLE ORCLPDB1.HR.*;
+EOF
+
+ggsci << EOF
+DBLOGIN USERIDALIAS src_cdb
+REGISTER EXTRACT capture1 DATABASE CONTAINER(ORCLPDB1)
+ADD EXTRACT capture1, INTEGRATED TRANLOG, BEGIN NOW
+ADD EXTTRAIL $OGG_HOME/dirdat/capture1/lt, EXTRACT capture1, megabytes 500
+EOF
+
+mkdir -p $OGG_HOME/dirdat/pump1
+cat <<EOF > $OGG_HOME/dirprm/pump1.prm
+EXTRACT pump1
+RMTHOST target-ogg,MGRPORT 7809,PARAMS "-f"
+RMTTRAIL $OGG_HOME/dirdat/pump1/rt
+TABLE ORCLPDB1.HR.*;
+EOF
+
+ggsci << EOF
+DBLOGIN USERIDALIAS src_cdb
+ADD EXTRACT PUMP1, EXTTRAILSOURCE $OGG_HOME/dirdat/capture1/lt
+ADD RMTTRAIL $OGG_HOME/dirdat/pump1/rt, EXTRACT PUMP1
+INFO ALL
+EOF
