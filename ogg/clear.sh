@@ -10,6 +10,10 @@ items=(
     "docker/oracle19c/data/target-oradata"
 )
 for item in "${items[@]}" ; do
+    if [ -e $item ]; then
+        rm -rf $item
+    fi
+    mkdir -p $item
     chown 543321:54321 $item
     chmod 775 $item
 done

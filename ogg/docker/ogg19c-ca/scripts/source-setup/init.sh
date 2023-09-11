@@ -1,3 +1,18 @@
+# 接続できるまで待ち
+sqlplus /nolog <<EOF
+WHENEVER SQLERROR EXIT FAILURE
+conn c##ggadmin@SRC_ORCLCDB/passw0rd
+EOF
+while [ $? -ne 0 ];
+do
+    sleep 60
+    sqlplus /nolog <<EOF
+WHENEVER SQLERROR EXIT FAILURE
+conn c##ggadmin@SRC_ORCLCDB/passw0rd
+EOF
+done
+
+# OGG のセットアップ（ソース）
 ggsci << EOF
 ADD CREDENTIALSTORE
 ALTER CREDENTIALSTORE ADD USER c##ggadmin@SRC_ORCLCDB, PASSWORD passw0rd ALIAS src_cdb

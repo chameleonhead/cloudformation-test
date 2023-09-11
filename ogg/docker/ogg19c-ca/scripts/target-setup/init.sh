@@ -1,3 +1,18 @@
+# 接続できるまで待ち
+sqlplus /nolog <<EOF
+WHENEVER SQLERROR EXIT FAILURE
+conn ggadmin@DST_ORCLPDB1/passw0rd
+EOF
+while [ $? -ne 0 ];
+do
+    sleep 60
+    sqlplus /nolog <<EOF
+WHENEVER SQLERROR EXIT FAILURE
+conn ggadmin@DST_ORCLPDB1/passw0rd
+EOF
+done
+
+# OGG のセットアップ（ターゲット）
 ggsci << EOF
 ADD CREDENTIALSTORE
 ALTER CREDENTIALSTORE ADD USER ggadmin@DST_ORCLPDB1, PASSWORD passw0rd ALIAS dst_pdb1
