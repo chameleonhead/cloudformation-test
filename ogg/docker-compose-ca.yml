@@ -27,6 +27,7 @@ services:
       context: ./docker/ogg19c-ca
       dockerfile: Dockerfile
     volumes:
+      - ./docker/ogg19c-ca/scripts/target-setup:/opt/oracle/scripts/setup
       - ./docker/ogg19c-ca/tns_admin/target-admin:/opt/oracle/product/19.3.0/client_1/network/admin
       - ./docker/ogg19c-ca/data/target-ogg:/opt/oracle/ogg
   target-db:

@@ -83,5 +83,6 @@ ENV OGG_HOME=/opt/oracle/ogg \
     LD_LIBRARY_PATH=$ORACLE_HOME/lib
 ENV PATH=$OGG_HOME:$PATH
 
+WORKDIR /opt/oracle/ogg
 COPY docker-entrypoint.sh /
 CMD [ "/docker-entrypoint.sh" ]

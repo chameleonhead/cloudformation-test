@@ -1,14 +1,16 @@
 #!/bin/bash
-if [ ! -e $OGG_HOME/dirprm/mgr.prm ]; then
+if [ ! -e $OGG_HOME/mgr ]; then
     # Oracle GoldenGate Client Architecture のインストール
     /tmp/orainstall/fbo_ggs_Linux_x64_shiphome/Disk1/runInstaller -silent -waitForCompletion -ignoreSysPrereqs -responseFile /tmp/orainstall/oggcore.rsp
+
     echo "CREATE SUBDIRS" | $OGG_HOME/ggsci
     cat << EOF > $OGG_HOME/dirprm/mgr.prm
 PORT 7809
+AUTOSTART ER *
 AUTORESTART ER *, RETRIES 3, WAITMINUTES 5
 EOF
 
-    SCRIPT_ROOT="/opt/oracle/scripts/setup"
+    SCRIPTS_ROOT="/opt/oracle/scripts/setup"
     # Execute custom provided files (only if directory exists and has files in it)
     if [ -d "$SCRIPTS_ROOT" ] && [ -n "$(ls -A "$SCRIPTS_ROOT")" ]; then
 
