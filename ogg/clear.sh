@@ -1,6 +1,7 @@
 #!/bin/bash
-docker-compose -f docker-compose-19ma.yml down -v
 docker-compose -f docker-compose-19ca.yml down -v
+docker-compose -f docker-compose-19ma.yml down -v
+docker-compose -f docker-compose-21ma.yml down -v
 items=(
     "docker/ogg19c-ca/data/source-ogg"
     "docker/ogg19c-ca/data/target-ogg"

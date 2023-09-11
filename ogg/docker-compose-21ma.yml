@@ -18,7 +18,7 @@ services:
       context: ./docker/ogg21c-ma
       dockerfile: Dockerfile
     volumes:
-      - ./docker/ogg21c-ma/tns_admin/source-admin:/opt/oracle/ogg_deployments/Local/network/admin
+      - ./docker/ogg21c-ma/tns_admin/source-admin:/opt/oracle/network/admin
       - ./docker/ogg21c-ma/data/source-deployments:/opt/oracle/ogg_deployments
     environment:
       - PORT_BASE=11000
@@ -35,7 +35,7 @@ services:
       context: ./docker/ogg21c-ma
       dockerfile: Dockerfile
     volumes:
-      - ./docker/ogg21c-ma/tns_admin/target-admin:/opt/oracle/ogg_deployments/Local/network/admin
+      - ./docker/ogg21c-ma/tns_admin/target-admin:/opt/oracle/network/admin
       - ./docker/ogg21c-ma/data/target-deployments:/opt/oracle/ogg_deployments
     environment:
       - PORT_BASE=12000

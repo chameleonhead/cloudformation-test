@@ -242,7 +242,7 @@ ENV_LD_LIBRARY_PATH=${OGG_HOME}/lib/instantclient:${OGG_HOME}/lib
 # Specify the value for the TNS_ADMIN environment variable.
 # This environment variable is only for Oracle Databases.
 #-------------------------------------------------------------------------------
-ENV_TNS_ADMIN=/opt/oracle/ogg_deployments/Local/network/admin
+ENV_TNS_ADMIN=/opt/oracle/network/admin
 
 #-------------------------------------------------------------------------------
 # This option is only needed when Sharding will be enabled.

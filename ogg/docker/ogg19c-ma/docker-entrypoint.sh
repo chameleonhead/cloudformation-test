@@ -1,14 +1,14 @@
 #!/bin/bash
-if [ ! -e /opt/oracle/ogg_deployments/Local ]; then
+if [ ! -e /opt/oracle/ogg_deployments/ServiceManager ]; then
     sed -i "s/11000/$PORT_BASE/" /tmp/orainstall/oggca.rsp
     sed -i "s/11001/$(expr ${PORT_BASE} + 1)/" /tmp/orainstall/oggca.rsp
     sed -i "s/11002/$(expr ${PORT_BASE} + 2)/" /tmp/orainstall/oggca.rsp
     sed -i "s/11003/$(expr ${PORT_BASE} + 3)/" /tmp/orainstall/oggca.rsp
     sed -i "s/11004/$(expr ${PORT_BASE} + 4)/" /tmp/orainstall/oggca.rsp
     sed -i "s/11005/$(expr ${PORT_BASE} + 5)/" /tmp/orainstall/oggca.rsp
-    /opt/oracle/product/19.1.0/oggcore_1/bin/oggca.sh -silent -responseFile /tmp/orainstall/oggca.rsp
+    $OGG_HOME/bin/oggca.sh -silent -responseFile /tmp/orainstall/oggca.rsp
 
-    SCRIPT_ROOT="/opt/oracle/scripts/setup"
+    SCRIPTS_ROOT="/opt/oracle/scripts/setup"
     # Execute custom provided files (only if directory exists and has files in it)
     if [ -d "$SCRIPTS_ROOT" ] && [ -n "$(ls -A "$SCRIPTS_ROOT")" ]; then
 
