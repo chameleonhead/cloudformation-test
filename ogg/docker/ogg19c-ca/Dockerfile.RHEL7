@@ -1,17 +1,15 @@
-FROM centos:7
-# Cent OS 9 で実行しようとしたところ、Oracle Database Client のインストールでエラーとなった。
-# 解決方法がわからないので、Cent OS 7 に変更。
-# FROM quay.io/centos/centos:stream9
+FROM quay.io/centos/centos:7
 
 USER root
 
-# Oracle のインストーラーに入っている jre は GUI の表示でエラーになることがあったので
-# ディストリビューションの java をインストールし、JAVA_HOME を設定することで
-# 回避している。
+# インストールに必要なファイルをコピー
+COPY LINUX.X64_193000_client.zip /tmp/orainstall/
+COPY 191001_fbo_ggs_Linux_x64_shiphome.zip /tmp/orainstall/
+
+# 必要なパッケージのインストール
 RUN yum install -y \
     sudo \
     unzip \
-    java-11-openjdk-headless \
     # Oracle Database Client 19c のインストールに必要なパッケージ
     # https://docs.oracle.com/cd/F19136_01/lacli/supported-red-hat-enterprise-linux-8-distributions-for-x86-64.html#GUID-B1487167-84F8-4F8D-AC31-A4E8F592374B
     bc \
@@ -40,12 +38,14 @@ RUN yum install -y \
     policycoreutils \
     policycoreutils-python-utils \
     smartmontools \
-    sysstat
-ENV JAVA_HOME=/usr/lib/jvm/jre
+    sysstat \
+    # Oracle Database Client 向けの追加パッケージ
+    libnsl2 \
+    libnsl2-devel \
+    net-tools \
+    nfs-utils
 
 # インストール用のファイルをコピー
-COPY LINUX.X64_193000_client.zip /tmp/orainstall/
-COPY 191001_fbo_ggs_Linux_x64_shiphome.zip /tmp/orainstall/
 COPY client_install.rsp oggcore.rsp /tmp/orainstall/
 
 # Oracle Database Client 19c の配置
