@@ -34,7 +34,7 @@ EOF
 
 cat <<EOF > $OGG_HOME/dirprm/pump1.prm
 EXTRACT pump1
-RMTHOST target-ogg-ca, MGRPORT 7809
+RMTHOST target-ogg-19ca, MGRPORT 7809
 RMTTRAIL rt
 TABLE ORCLPDB1.HR.*;
 EOF

@@ -2,10 +2,6 @@ FROM quay.io/centos/centos:7
 
 USER root
 
-# インストールに必要なファイルをコピー
-COPY LINUX.X64_193000_client.zip /tmp/orainstall/
-COPY 191001_fbo_ggs_Linux_x64_shiphome.zip /tmp/orainstall/
-
 # 必要なパッケージのインストール
 RUN yum install -y \
     sudo \
@@ -45,17 +41,14 @@ RUN yum install -y \
     net-tools \
     nfs-utils
 
-# インストール用のファイルをコピー
-COPY client_install.rsp oggcore.rsp /tmp/orainstall/
+# Oracle Database Client 19c のインストールに必要なファイルをコピー
+COPY LINUX.X64_193000_client.zip /tmp/orainstall/
+COPY client_install.rsp /tmp/orainstall/
 
 # Oracle Database Client 19c の配置
 # https://docs.oracle.com/cd/F19136_01/lacli/running-oracle-universal-installer-to-install-oracle-database-client.html#GUID-DB056013-736D-4A7A-8C98-607103E2F07F
 # LINUX.X64_193000_client.zip を展開すると client/runInstaller が現れる
 RUN unzip -q /tmp/orainstall/LINUX.X64_193000_client.zip -d /tmp/orainstall
-
-# Oracle GoldenGate Classic Architecture の配置
-# https://docs.oracle.com/cd/F22974_01/installing/installing-classic-architecture.html#GUID-2B159AF2-4F45-408F-8595-D4CEDDB4373F
-RUN unzip /tmp/orainstall/191001_fbo_ggs_Linux_x64_shiphome.zip -d /tmp/orainstall
 
 # oracle ユーザーの作成
 RUN groupadd -g 54321 oinstall && \
@@ -78,6 +71,14 @@ RUN /opt/oracle/oraInventory/orainstRoot.sh
 USER oracle
 ENV ORACLE_HOME=/opt/oracle/product/19.3.0/client_1 \
     PATH=/opt/oracle/product/19.3.0/client_1/bin:$PATH
+
+# Oracle GoldenGate Classic Architecture のインストールに必要なファイルをコピー
+COPY 191001_fbo_ggs_Linux_x64_shiphome.zip /tmp/orainstall/
+COPY oggcore.rsp /tmp/orainstall/
+
+# Oracle GoldenGate Classic Architecture の配置
+# https://docs.oracle.com/cd/F22974_01/installing/installing-classic-architecture.html#GUID-2B159AF2-4F45-408F-8595-D4CEDDB4373F
+RUN unzip /tmp/orainstall/191001_fbo_ggs_Linux_x64_shiphome.zip -d /tmp/orainstall
 
 ENV OGG_HOME=/opt/oracle/ogg \
     LD_LIBRARY_PATH=$ORACLE_HOME/lib

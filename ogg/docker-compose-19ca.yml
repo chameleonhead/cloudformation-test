@@ -1,6 +1,6 @@
 version: "3"
 services:
-  source-db:
+  source-db-19:
     platform: linux/x86_64
     build:
       context: ./docker/oracle19c
@@ -12,7 +12,7 @@ services:
       - ./docker/oracle19c/data/source-oradata:/opt/oracle/oradata
     ports:
       - 1521:1521
-  source-ogg-ca:
+  source-ogg-19ca:
     platform: linux/x86_64
     build:
       context: ./docker/ogg19c-ca
@@ -21,7 +21,7 @@ services:
       - ./docker/ogg19c-ca/scripts/source-setup:/opt/oracle/scripts/setup
       - ./docker/ogg19c-ca/tns_admin/source-admin:/opt/oracle/product/19.3.0/client_1/network/admin
       - ./docker/ogg19c-ca/data/source-ogg:/opt/oracle/ogg
-  target-ogg-ca:
+  target-ogg-19ca:
     platform: linux/x86_64
     build:
       context: ./docker/ogg19c-ca
@@ -30,7 +30,7 @@ services:
       - ./docker/ogg19c-ca/scripts/target-setup:/opt/oracle/scripts/setup
       - ./docker/ogg19c-ca/tns_admin/target-admin:/opt/oracle/product/19.3.0/client_1/network/admin
       - ./docker/ogg19c-ca/data/target-ogg:/opt/oracle/ogg
-  target-db:
+  target-db-19:
     platform: linux/x86_64
     build:
       context: ./docker/oracle19c

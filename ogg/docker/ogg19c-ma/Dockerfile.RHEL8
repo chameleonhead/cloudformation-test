@@ -74,18 +74,29 @@ USER oracle
 ENV ORACLE_HOME=/opt/oracle/product/19.3.0/client_1 \
     PATH=/opt/oracle/product/19.3.0/client_1/bin:$PATH
 
-# Oracle GoldenGate Classic Architecture のインストールに必要なファイルをコピー
-COPY 191001_fbo_ggs_Linux_x64_shiphome.zip /tmp/orainstall/
-COPY oggcore.rsp /tmp/orainstall/
+# Oracle GoldenGate Microservices Architecture のインストールに必要なファイルをコピー
+COPY 191001_fbo_ggs_Linux_x64_services_shiphome.zip /tmp/orainstall/
+COPY oggcore.rsp oggca.rsp /tmp/orainstall/
 
-# Oracle GoldenGate Classic Architecture の配置
-# https://docs.oracle.com/cd/F22974_01/installing/installing-classic-architecture.html#GUID-2B159AF2-4F45-408F-8595-D4CEDDB4373F
-RUN unzip /tmp/orainstall/191001_fbo_ggs_Linux_x64_shiphome.zip -d /tmp/orainstall
+# Oracle GoldenGate Microservices Architecture の配置
+# https://docs.oracle.com/cd/F22974_01/installing/installing-microservices-architecture-oracle-goldengate.html#GUID-2E805D77-8362-460A-BA61-D267FC303863
+RUN unzip /tmp/orainstall/191001_fbo_ggs_Linux_x64_services_shiphome.zip -d /tmp/orainstall
 
-ENV OGG_HOME=/opt/oracle/ogg \
-    LD_LIBRARY_PATH=$ORACLE_HOME/lib
-ENV PATH=$OGG_HOME:$PATH
+# Oracle GoldenGate Microservices Architecture のインストール
+RUN /tmp/orainstall/fbo_ggs_Linux_x64_services_shiphome/Disk1/runInstaller -silent -waitForCompletion -ignoreSysPrereqs -responseFile /tmp/orainstall/oggcore.rsp
+ENV OGG_HOME=/opt/oracle/product/19.1.0/oggcore_1 \
+    PATH=/opt/oracle/product/19.1.0/oggcore_1/bin:$PATH
 
-WORKDIR /opt/oracle/ogg
+# Deploymentの作成は起動時に実施
+ENV PORT_BASE=11000
+
+# デフォルトでは以下のポートを使用する
+# 11000: Service Manager
+# 11001: Administration server
+# 11002: Distribution server
+# 11003: Receiver server
+# 11004: Performance Metrics server (TCP)
+# 11005: Performance Metrics server (UDP)
+
 COPY docker-entrypoint.sh /
 CMD [ "/docker-entrypoint.sh" ]
