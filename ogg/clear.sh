@@ -6,6 +6,8 @@ items=(
     "docker/ogg19c-ca/data/target-ogg"
     "docker/ogg19c-ma/data/source-deployments"
     "docker/ogg19c-ma/data/target-deployments"
+    "docker/ogg21c-ma/data/source-deployments"
+    "docker/ogg21c-ma/data/target-deployments"
     "docker/oracle19c/data/source-oradata"
     "docker/oracle19c/data/target-oradata"
 )
