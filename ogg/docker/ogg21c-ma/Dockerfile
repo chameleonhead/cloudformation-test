@@ -8,7 +8,8 @@ RUN dnf install -y \
     unzip \
     # Oracle GoldenGate Microservices Architecture のインストールに必要なパッケージ
     # https://stackoverflow.com/a/66006075
-    libnsl.x86_64 
+    libnsl \
+    libaio
 
 # oracle ユーザーの作成
 RUN groupadd -g 54321 oinstall && \
@@ -39,8 +40,7 @@ RUN /tmp/orainstall/fbo_ggs_Linux_x64_Oracle_services_shiphome/Disk1/runInstalle
 USER root
 RUN /home/oracle/oraInventory/orainstRoot.sh
 USER oracle
-ENV OGG_HOME=/opt/oracle/product/21.3.0/oggcore_1 \
-    PATH=/opt/oracle/product/21.3.0/oggcore_1/bin:$PATH
+ENV OGG_HOME=/opt/oracle/product/21.3.0/oggcore_1
 
 # Deploymentの作成は起動時に実施
 ENV PORT_BASE=11000

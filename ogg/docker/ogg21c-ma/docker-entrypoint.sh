@@ -8,6 +8,15 @@ if [ ! -e /opt/oracle/ogg_deployments/ServiceManager ]; then
     sed -i "s/11005/$(expr ${PORT_BASE} + 5)/" /tmp/orainstall/oggca.rsp
     $OGG_HOME/bin/oggca.sh -silent -responseFile /tmp/orainstall/oggca.rsp
 
+    if [ ! -e /opt/oracle/ogg_deployments/Local/etc ]; then
+        rm -rf /opt/oracle/ogg_deployments/Local
+        # if Local deployment does not exist, run ServiceManager and then create
+        # first creation only fails on docker
+        cp /tmp/orainstall/oggca.rsp /tmp/orainstall/oggca_Local.rsp
+        sed -i "s/CREATE_NEW_SERVICEMANAGER=true/CREATE_NEW_SERVICEMANAGER=false/" /tmp/orainstall/oggca_Local.rsp
+        $OGG_HOME/bin/oggca.sh -silent -responseFile /tmp/orainstall/oggca_Local.rsp
+    fi;
+
     SCRIPTS_ROOT="/opt/oracle/scripts/setup"
     # Execute custom provided files (only if directory exists and has files in it)
     if [ -d "$SCRIPTS_ROOT" ] && [ -n "$(ls -A "$SCRIPTS_ROOT")" ]; then
@@ -30,9 +39,9 @@ if [ ! -e /opt/oracle/ogg_deployments/ServiceManager ]; then
 
 fi;
 
-export DEPLOYMENT_BASE=/opt/oracle/ogg_deployments/ServiceManager
-export OGG_ETC_HOME=$DEPLOYMENT_BASE/etc
-export OGG_VAR_HOME=$DEPLOYMENT_BASE/var
-trap "$DEPLOYMENT_BASE/bin/stopSM.sh; exit" SIGINT SIGTERM
-$DEPLOYMENT_BASE/bin/startSM.sh
-tail -f $OGG_VAR_HOME/log/*.log
+export OGG_DEPLOYMENT_HOME=/opt/oracle/ogg_deployments/ServiceManager
+export OGG_ETC_HOME=$OGG_DEPLOYMENT_HOME/etc
+export OGG_VAR_HOME=$OGG_DEPLOYMENT_HOME/var
+trap "$OGG_DEPLOYMENT_HOME/bin/stopSM.sh; exit" SIGINT SIGTERM
+$OGG_DEPLOYMENT_HOME/bin/startSM.sh
+tail -F "${OGG_DEPLOYMENT_HOME}"/var/log/ServiceManager.log

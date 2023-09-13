@@ -5,6 +5,7 @@ alter session set container=cdb$root;
 alter system set enable_goldengate_replication=TRUE scope=both;
 
 -- ターゲットPDBユーザー権限(ORCLPDB1)
+-- https://docs.oracle.com/en/middleware/goldengate/core/21.3/coredoc/quickstart-your-data-replication-oracle-goldengate-microservices-architecture.html#guid-faaafdb1-ff77-4ef5-a85c-3fbbb832ccd1
 alter session set container=ORCLPDB1;
 create user ggadmin identified by passw0rd container=current;
 grant alter system to ggadmin container=current;

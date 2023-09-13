@@ -9,29 +9,21 @@ services:
         DB_EDITION: EE
     volumes:
       - ./docker/oracle19c/scripts/source-setup:/opt/oracle/scripts/setup
-      - ./docker/oracle19c/data/source-oradata:/opt/oracle/oradata
+      - ./docker/oracle19c/data/source:/opt/oracle/oradata
     ports:
       - 1521:1521
-  source-ogg-21ma:
+  source-ogg-19ca:
     platform: linux/x86_64
     build:
-      context: ./docker/ogg21c-ma
-      dockerfile: Dockerfile
+      context: ./docker/ogg19c-ca
+      dockerfile: Dockerfile.RHEL8
     volumes:
-      - ./docker/ogg21c-ma/scripts/source-setup:/opt/oracle/scripts/setup
-      - ./docker/ogg21c-ma/tns_admin/source:/opt/oracle/network/admin
-      - ./docker/ogg21c-ma/data/source-21ma:/opt/oracle/ogg_deployments
+      - ./docker/ogg19c-ca/scripts/source-setup:/opt/oracle/scripts/setup
+      - ./docker/ogg19c-ca/tns_admin/source:/opt/oracle/product/19.3.0/client_1/network/admin
+      - ./docker/ogg19c-ca/data/source:/opt/oracle/ogg
     environment:
-      - PORT_BASE=11000
       - TARGET_OGG_HOST=target-ogg-21ma
       - TARGET_OGG_PORT=12003
-    ports:
-      - 11000:11000
-      - 11001:11001
-      - 11002:11002
-      - 11003:11003
-      - 11004:11004
-      - 11005:11005
   target-ogg-21ma:
     platform: linux/x86_64
     build:
@@ -40,7 +32,7 @@ services:
     volumes:
       - ./docker/ogg21c-ma/scripts/target-setup:/opt/oracle/scripts/setup
       - ./docker/ogg21c-ma/tns_admin/target:/opt/oracle/network/admin
-      - ./docker/ogg21c-ma/data/target-21ma:/opt/oracle/ogg_deployments
+      - ./docker/ogg21c-ma/data/target:/opt/oracle/ogg_deployments
     environment:
       - PORT_BASE=12000
     ports:
@@ -59,6 +51,6 @@ services:
         DB_EDITION: SE2
     volumes:
       - ./docker/oracle19c/scripts/target-setup:/opt/oracle/scripts/setup
-      - ./docker/oracle19c/data/target-21ma:/opt/oracle/oradata
+      - ./docker/oracle19c/data/target:/opt/oracle/oradata
     ports:
       - 1522:1521
