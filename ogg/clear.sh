@@ -28,20 +28,53 @@ items=(
     "docker/ogg21c-ma/data/source-21ma"
     "docker/ogg21c-ma/data/target"
     "docker/ogg21c-ma/data/target-21ma"
-    "docker/oracle19c/data/source"
-    "docker/oracle19c/data/source-19ca"
-    "docker/oracle19c/data/source-19ma"
-    "docker/oracle19c/data/source-21ma"
-    "docker/oracle19c/data/target"
-    "docker/oracle19c/data/target-19ca"
-    "docker/oracle19c/data/target-19ma"
-    "docker/oracle19c/data/target-21ma"
 )
 for item in "${items[@]}" ; do
     if [ -e $item ]; then
         rm -rf $item
     fi
     mkdir -p $item
-    chown 543321:54321 $item
+    chown 54321:54321 $item
     chmod 775 $item
+done
+
+items=(
+    "docker/oracle19c/data/source"
+    "docker/oracle19c/data/source-19ca"
+    "docker/oracle19c/data/source-19ma"
+    "docker/oracle19c/data/source-21ma"
+)
+for item in "${items[@]}" ; do
+    if [ -e docker/oracle19c/images/ee-image.zip ]; then
+        unzip docker/oracle19c/images/ee-image.zip -d $item
+        chown -R 54321:54322 $item
+    else
+        if [ -e $item ]; then
+            rm -rf $item
+        fi
+        mkdir -p $item
+        chown 54321:54322 $item
+        chmod 775 $item
+    fi
+done
+
+
+items=(
+    "docker/oracle19c/data/target"
+    "docker/oracle19c/data/target-19ca"
+    "docker/oracle19c/data/target-19ma"
+    "docker/oracle19c/data/target-21ma"
+)
+for item in "${items[@]}" ; do
+    if [ -e docker/oracle19c/images/se2-image.zip ]; then
+        unzip docker/oracle19c/images/se2-image.zip -d $item
+        chown -R 54321:54322 $item
+    else
+        if [ -e $item ]; then
+            rm -rf $item
+        fi
+        mkdir -p $item
+        chown 54321:54322 $item
+        chmod 775 $item
+    fi
 done

@@ -182,7 +182,7 @@ EXISTING_SERVICEMANAGER_IS_XAG_ENABLED=false
 #-------------------------------------------------------------------------------
 # Specify the existing OGG software home location.
 #-------------------------------------------------------------------------------
-OGG_SOFTWARE_HOME=/opt/oracle/product/21.3.0/oggcore_1/
+OGG_SOFTWARE_HOME=/opt/oracle/product/21.3.0/oggcore_1
 
 
 ###############################################################################
@@ -433,7 +433,7 @@ PMSRVR_DATASTORE_TYPE=BDB
 # Specify the DataStore home location for Performance Metrics server.
 # This is optional and only takes effect when Performance Metrics server will be enabled.
 #-------------------------------------------------------------------------------
-PMSRVR_DATASTORE_HOME=/opt/oracle/ogg_deployments/Local/datastore
+PMSRVR_DATASTORE_HOME=
 
 
 ###############################################################################
