@@ -46,6 +46,7 @@ items=(
 )
 for item in "${items[@]}" ; do
     if [ -e docker/oracle19c/images/ee-image.zip ]; then
+        rm -rf $item
         unzip docker/oracle19c/images/ee-image.zip -d $item
         chown -R 54321:54322 $item
     else
@@ -67,6 +68,7 @@ items=(
 )
 for item in "${items[@]}" ; do
     if [ -e docker/oracle19c/images/se2-image.zip ]; then
+        rm -rf $item
         unzip docker/oracle19c/images/se2-image.zip -d $item
         chown -R 54321:54322 $item
     else

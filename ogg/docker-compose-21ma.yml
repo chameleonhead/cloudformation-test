@@ -9,7 +9,7 @@ services:
         DB_EDITION: EE
     volumes:
       - ./docker/oracle19c/scripts/source-setup:/opt/oracle/scripts/setup
-      - ./docker/oracle19c/data/source-oradata:/opt/oracle/oradata
+      - ./docker/oracle19c/data/source-21ma:/opt/oracle/oradata
     ports:
       - 1521:1521
   source-ogg-21ma:

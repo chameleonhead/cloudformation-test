@@ -3,7 +3,7 @@
 -- CGGNORTH DATABASE SETUP AT CDB LEVEL
 alter session set container=cdb$root;
 alter system set enable_goldengate_replication=TRUE scope=both;
-alter system set streams_pool_size=1G scope=both;
+alter system set streams_pool_size=100m scope=both;
 
 shutdown immediate;
 startup mount;
