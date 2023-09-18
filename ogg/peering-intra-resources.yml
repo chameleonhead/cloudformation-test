@@ -1,0 +1,112 @@
+# aws cloudformation create-stack --stack-name peering-intra-resources --template-body file://peering-intra-resources.yml --capabilities CAPABILITY_IAM
+# aws cloudformation update-stack --stack-name peering-intra-resources --template-body file://peering-intra-resources.yml --capabilities CAPABILITY_IAM
+# aws cloudformation delete-stack --stack-name peering-intra-resources
+# aws cloudformation describe-stacks --stack-name peering-intra-resources
+
+AWSTemplateFormatVersion: 2010-09-09
+
+Parameters:
+  VpcName:
+    Type: String
+    Default: peeing-vpc-intra
+
+  OggInstanceIpAddress:
+    Type: String
+    Default: 172.17.0.4
+
+Resources:
+  # VPC Peering では NAT Gateway/Endpointの共有はできないので、IntraVPCにエンドポイントを作成する
+  VPCEndpointSSM:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      PrivateDnsEnabled: true
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.ssm
+      SubnetIds:
+        - !ImportValue peering-vpc-IntraGatewaySubnetAZ1
+      VpcEndpointType: Interface
+      VpcId: !ImportValue peering-vpc-IntraVPC
+      SecurityGroupIds:
+        - !ImportValue peering-vpc-IntraVPCDefaultSecurityGroup
+
+  VPCEndpointSSMMessages:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      PrivateDnsEnabled: true
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.ssmmessages
+      SubnetIds:
+        - !ImportValue peering-vpc-IntraGatewaySubnetAZ1
+      VpcEndpointType: Interface
+      VpcId: !ImportValue peering-vpc-IntraVPC
+      SecurityGroupIds:
+        - !ImportValue peering-vpc-IntraVPCDefaultSecurityGroup
+
+  VPCEndpointEC2Messages:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      PrivateDnsEnabled: true
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.ec2messages
+      SubnetIds:
+        - !ImportValue peering-vpc-IntraGatewaySubnetAZ1
+      VpcEndpointType: Interface
+      VpcId: !ImportValue peering-vpc-IntraVPC
+      SecurityGroupIds:
+        - !ImportValue peering-vpc-IntraVPCDefaultSecurityGroup
+
+  VPCEndpointS3:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      RouteTableIds:
+        - !ImportValue peering-vpc-RouteTableForIntraVPCSubnet1
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.s3
+      VpcEndpointType: Gateway
+      VpcId: !ImportValue peering-vpc-IntraVPC
+
+  EC2IAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+
+  EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+        - !Ref EC2IAMRole
+
+  OggInstanceKeyPair:
+    Type: AWS::EC2::KeyPair
+    Properties:
+      KeyName: !Sub ${AWS::StackName}-OggInstanceKeyPair
+
+  OggInstance:
+    DependsOn:
+      - VPCEndpointSSM
+      - VPCEndpointSSMMessages
+      - VPCEndpointEC2Messages
+      - VPCEndpointS3
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-087bd73fc10ea41af
+      InstanceType: t2.micro
+      KeyName: !Ref OggInstanceKeyPair
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      PrivateIpAddress: !Ref OggInstanceIpAddress
+      SubnetId: !ImportValue peering-vpc-IntraSubnet1AZ1
+      SecurityGroupIds:
+        - !ImportValue peering-vpc-IntraVPCDefaultSecurityGroup
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeType: gp3
+            VolumeSize: 30

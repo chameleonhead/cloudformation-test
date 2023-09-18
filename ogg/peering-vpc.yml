@@ -324,6 +324,12 @@ Outputs:
     Export:
       Name: !Sub ${AWS::StackName}-IntraVPC
 
+  IntraVPCDefaultSecurityGroup:
+    Description: A reference to the created IntraVPCDefaultSecurityGroup
+    Value: !GetAtt IntraVPC.DefaultSecurityGroup
+    Export:
+      Name: !Sub ${AWS::StackName}-IntraVPCDefaultSecurityGroup
+
   IntraSubnet1AZ1:
     Description: A reference to the created IntraSubnet1AZ1
     Value: !Ref IntraSubnet1AZ1
