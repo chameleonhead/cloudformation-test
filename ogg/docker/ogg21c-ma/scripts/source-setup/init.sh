@@ -35,6 +35,7 @@ cat <<EOF > $OGG_ETC_HOME/conf/ogg/CAPTURE1.prm
 EXTRACT capture1
 USERIDALIAS src_cdb
 EXTTRAIL lt
+DDL
 TABLE ORCLPDB1.HR.*;
 EOF
 
