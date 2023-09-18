@@ -1,0 +1,411 @@
+# aws cloudformation create-stack --stack-name peering-vpc --template-body file://peering-vpc.yml
+# aws cloudformation update-stack --stack-name peering-vpc --template-body file://peering-vpc.yml
+# aws cloudformation delete-stack --stack-name peering-vpc
+# aws cloudformation describe-stacks --stack-name peering-vpc
+
+AWSTemplateFormatVersion: 2010-09-09
+
+Parameters:
+  VpcIntraName:
+    Type: String
+    Default: peering-vpc-intra
+
+  VpcIntraCIDR:
+    Type: String
+    Default: 172.17.0.0/24
+
+  IntraSubnet1AZ1CIDR:
+    Type: String
+    Default: 172.17.0.0/26
+
+  IntraGatewaySubnetAZ1CIDR:
+    Type: String
+    Default: 172.17.0.64/28
+
+  VpcName:
+    Type: String
+    Default: peering-vpc
+
+  VpcCIDR:
+    Type: String
+    Default: 10.0.0.0/16
+
+  RdsSubnetAZ1CIDR:
+    Type: String
+    Default: 10.0.0.0/24
+
+  RdsSubnetAZ2CIDR:
+    Type: String
+    Default: 10.0.1.0/24
+
+  LambdaSubnetAZ1CIDR:
+    Type: String
+    Default: 10.0.2.0/24
+
+  LambdaSubnetAZ2CIDR:
+    Type: String
+    Default: 10.0.3.0/24
+
+  GatewaySubnetAZ1CIDR:
+    Type: String
+    Default: 10.0.4.0/24
+
+  GatewaySubnetAZ2CIDR:
+    Type: String
+    Default: 10.0.5.0/24
+
+  PublicSubnetAZ1CIDR:
+    Type: String
+    Default: 10.0.6.0/24
+
+  PublicSubnetAZ2CIDR:
+    Type: String
+    Default: 10.0.7.0/24
+
+Resources:
+  IntraVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcIntraCIDR
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${VpcIntraName}-${AWS::Region}
+
+  IntraSubnet1AZ1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref IntraVPC
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      CidrBlock: !Ref IntraSubnet1AZ1CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${VpcIntraName}-subnet1az1-${AWS::Region}
+
+  IntraGatewaySubnetAZ1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref IntraVPC
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      CidrBlock: !Ref IntraGatewaySubnetAZ1CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${VpcIntraName}-gatewaysubnetaz1-${AWS::Region}
+
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCIDR
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${VpcName}-${AWS::Region}
+
+  RdsSubnetAZ1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      CidrBlock: !Ref RdsSubnetAZ1CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${VpcName}-rdssubnetaz1-${AWS::Region}
+
+  RdsSubnetAZ2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [1, !GetAZs ""]
+      CidrBlock: !Ref RdsSubnetAZ2CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${VpcName}-rdssubnetaz2-${AWS::Region}
+
+  LambdaSubnetAZ1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      CidrBlock: !Ref LambdaSubnetAZ1CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${VpcName}-lambdasubnetaz1-${AWS::Region}
+
+  LambdaSubnetAZ2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [1, !GetAZs ""]
+      CidrBlock: !Ref LambdaSubnetAZ2CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${VpcName}-lambdasubnet2az2-${AWS::Region}
+
+  GatewaySubnetAZ1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      CidrBlock: !Ref GatewaySubnetAZ1CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${VpcName}-gatewaysubnetaz1-${AWS::Region}
+
+  GatewaySubnetAZ2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [1, !GetAZs ""]
+      CidrBlock: !Ref GatewaySubnetAZ2CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${VpcName}-gatewaysubnetaz2-${AWS::Region}
+
+  PublicSubnetAZ1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      CidrBlock: !Ref PublicSubnetAZ1CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${VpcName}-publicsubnetaz1-${AWS::Region}
+
+  PublicSubnetAZ2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [1, !GetAZs ""]
+      CidrBlock: !Ref PublicSubnetAZ2CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${VpcName}-publicsubnetaz2-${AWS::Region}
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub ${VpcName}-internet-gateway-${AWS::Region}
+
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+
+  VPCPeeringConnection:
+    Type: AWS::EC2::VPCPeeringConnection
+    Properties:
+      VpcId: !Ref VPC
+      PeerVpcId: !Ref IntraVPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${VpcName}-vpcpeering-${AWS::Region}
+
+  RouteTableForIntraVPCSubnet1:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref IntraVPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${VpcIntraName}-route-table-subnet1-${AWS::Region}
+
+  RouteTableForIntraVPCSubnet1VPCRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref RouteTableForIntraVPCSubnet1
+      DestinationCidrBlock: !Ref VpcCIDR
+      VpcPeeringConnectionId: !Ref VPCPeeringConnection
+
+  RouteTableAssociationForIntraSubnet1AZ1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref RouteTableForIntraVPCSubnet1
+      SubnetId: !Ref IntraSubnet1AZ1
+
+  RouteTableForVPCRdsSubnet:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${VpcName}-route-table-rdssubnet-${AWS::Region}
+  
+  RouteTableForVPCRdsSubnetRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref RouteTableForVPCRdsSubnet
+      DestinationCidrBlock: !Ref VpcIntraCIDR
+      VpcPeeringConnectionId: !Ref VPCPeeringConnection
+
+  RouteTableAssociationForVPCRdsSubnetAZ1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref RouteTableForVPCRdsSubnet
+      SubnetId: !Ref RdsSubnetAZ1
+
+  RouteTableAssociationForVPCRdsSubnetAZ2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref RouteTableForVPCRdsSubnet
+      SubnetId: !Ref RdsSubnetAZ2
+
+  RouteTableForVPCGatewaySubnet:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${VpcName}-route-table-gatewaysubnet-${AWS::Region}
+  
+  RouteTableForVPCGatewaySubnetRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref RouteTableForVPCGatewaySubnet
+      DestinationCidrBlock: !Ref VpcIntraCIDR
+      VpcPeeringConnectionId: !Ref VPCPeeringConnection
+
+  RouteTableAssociationForVPCGatewaySubnetAZ1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref RouteTableForVPCGatewaySubnet
+      SubnetId: !Ref GatewaySubnetAZ1
+
+  RouteTableAssociationForVPCGatewaySubnetAZ2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref RouteTableForVPCGatewaySubnet
+      SubnetId: !Ref GatewaySubnetAZ2
+
+  RouteTableForVPCPublicSubnet:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${VpcName}-route-table-publicsubnet-${AWS::Region}
+  
+  RouteTableForVPCPublicSubnetRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref RouteTableForVPCPublicSubnet
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  RouteTableAssociationForVPCPublicSubnetAZ1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref RouteTableForVPCPublicSubnet
+      SubnetId: !Ref PublicSubnetAZ1
+
+  RouteTableAssociationForVPCPublicSubnetAZ2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref RouteTableForVPCPublicSubnet
+      SubnetId: !Ref PublicSubnetAZ2
+
+Outputs:
+  IntraVPC:
+    Description: A reference to the created IntraVPC
+    Value: !Ref IntraVPC
+    Export:
+      Name: !Sub ${AWS::StackName}-IntraVPC
+
+  IntraSubnet1AZ1:
+    Description: A reference to the created IntraSubnet1AZ1
+    Value: !Ref IntraSubnet1AZ1
+    Export:
+      Name: !Sub ${AWS::StackName}-IntraSubnet1AZ1
+
+  IntraGatewaySubnetAZ1:
+    Description: A reference to the created IntraGatewaySubnetAZ1
+    Value: !Ref IntraGatewaySubnetAZ1
+    Export:
+      Name: !Sub ${AWS::StackName}-IntraGatewaySubnetAZ1
+
+  VPC:
+    Description: A reference to the created VPC
+    Value: !Ref VPC
+    Export:
+      Name: !Sub ${AWS::StackName}-VPC
+
+  RdsSubnetAZ1:
+    Description: A reference to the created RdsSubnetAZ1
+    Value: !Ref RdsSubnetAZ1
+    Export:
+      Name: !Sub ${AWS::StackName}-RdsSubnetAZ1
+
+  RdsSubnetAZ2:
+    Description: A reference to the created RdsSubnetAZ2
+    Value: !Ref RdsSubnetAZ2
+    Export:
+      Name: !Sub ${AWS::StackName}-RdsSubnetAZ2
+
+  LambdaSubnetAZ1:
+    Description: A reference to the created LambdaSubnetAZ1
+    Value: !Ref LambdaSubnetAZ1
+    Export:
+      Name: !Sub ${AWS::StackName}-LambdaSubnetAZ1
+
+  LambdaSubnetAZ2:
+    Description: A reference to the created LambdaSubnetAZ2
+    Value: !Ref LambdaSubnetAZ2
+    Export:
+      Name: !Sub ${AWS::StackName}-LambdaSubnetAZ2
+
+  GatewaySubnetAZ1:
+    Description: A reference to the created GatewaySubnetAZ1
+    Value: !Ref GatewaySubnetAZ1
+    Export:
+      Name: !Sub ${AWS::StackName}-GatewaySubnetAZ1
+
+  GatewaySubnetAZ2:
+    Description: A reference to the created GatewaySubnetAZ2
+    Value: !Ref GatewaySubnetAZ2
+    Export:
+      Name: !Sub ${AWS::StackName}-GatewaySubnetAZ2
+
+  PublicSubnetAZ1:
+    Description: A reference to the created PublicSubnetAZ1
+    Value: !Ref PublicSubnetAZ1
+    Export:
+      Name: !Sub ${AWS::StackName}-PublicSubnetAZ1
+
+  PublicSubnetAZ2:
+    Description: A reference to the created PublicSubnetAZ2
+    Value: !Ref PublicSubnetAZ2
+    Export:
+      Name: !Sub ${AWS::StackName}-PublicSubnetAZ2
+
+  RouteTableForIntraVPCSubnet1:
+    Value: !Ref RouteTableForIntraVPCSubnet1
+    Export:
+      Name: !Sub ${AWS::StackName}-RouteTableForIntraVPCSubnet1
+
+  RouteTableForVPCRdsSubnet:
+    Value: !Ref RouteTableForVPCRdsSubnet
+    Export:
+      Name: !Sub ${AWS::StackName}-RouteTableForVPCRdsSubnet
+
+  RouteTableForVPCGatewaySubnet:
+    Value: !Ref RouteTableForVPCGatewaySubnet
+    Export:
+      Name: !Sub ${AWS::StackName}-RouteTableForVPCGatewaySubnet
+
+  RouteTableForVPCPublicSubnet:
+    Value: !Ref RouteTableForVPCPublicSubnet
+    Export:
+      Name: !Sub ${AWS::StackName}-RouteTableForVPCPublicSubnet

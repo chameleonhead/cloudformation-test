@@ -1,0 +1,88 @@
+# aws cloudformation create-stack --stack-name peering-resources --template-body file://peering-resources.yml --capabilities CAPABILITY_IAM
+# aws cloudformation update-stack --stack-name peering-resources --template-body file://peering-resources.yml --capabilities CAPABILITY_IAM
+# aws cloudformation delete-stack --stack-name peering-resources
+# aws cloudformation describe-stacks --stack-name peering-resources
+
+AWSTemplateFormatVersion: 2010-09-09
+
+Parameters:
+  VpcName:
+    Type: String
+    Default: peeing-vpc
+
+Resources:
+  NatGatewayEIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+  
+  NatGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatGatewayEIP.AllocationId
+      SubnetId: !ImportValue peering-vpc-PublicSubnetAZ1
+
+  RouteTableRouteForVPCRdsSubnet:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !ImportValue peering-vpc-RouteTableForVPCRdsSubnet
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway
+
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: OGG Security Group
+      VpcId: !ImportValue peering-vpc-VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 0
+          ToPort: 65535
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub ${VpcName}-ogg-security-group-${AWS::Region}
+
+  EC2IAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+
+  EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+        - !Ref EC2IAMRole
+
+  OggInstanceKeyPair:
+    Type: AWS::EC2::KeyPair
+    Properties:
+      KeyName: !Sub ${AWS::StackName}-OggInstanceKeyPair
+
+  OggInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-087bd73fc10ea41af
+      InstanceType: t2.micro
+      KeyName: !Ref OggInstanceKeyPair
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      SubnetId: !ImportValue peering-vpc-RdsSubnetAZ1
+      SecurityGroupIds:
+        - !Ref SecurityGroup
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeType: gp3
+            VolumeSize: 30
