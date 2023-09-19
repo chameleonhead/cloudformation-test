@@ -1,0 +1,21 @@
+version: "3"
+services:
+  python:
+    platform: linux/x86_64
+    image: python:3.10
+    volumes:
+      - ./functions:/app
+  oracle19c:
+    platform: linux/x86_64
+    build:
+      context: ./docker/oracle19c
+      dockerfile: Dockerfile
+      args:
+        DB_EDITION: SE2
+    volumes:
+      - db-data:/opt/oracle/oradata
+    ports:
+      - 1521:1521
+
+volumes:
+  db-data:
