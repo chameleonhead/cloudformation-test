@@ -84,6 +84,21 @@ Resources:
       Roles:
         - !Ref EC2IAMRole
 
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: OGG Security Group
+      VpcId: !ImportValue peering-vpc-IntraVPC
+      SecurityGroupIngress:
+        - IpProtocol: '-1'
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: '-1'
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub ${VpcName}-ogg-security-group-${AWS::Region}
+
   OggInstanceKeyPair:
     Type: AWS::EC2::KeyPair
     Properties:
@@ -97,7 +112,7 @@ Resources:
       - VPCEndpointS3
     Type: AWS::EC2::Instance
     Properties:
-      ImageId: ami-087bd73fc10ea41af
+      ImageId: ami-0c955bbc0d55874fb
       InstanceType: t2.micro
       KeyName: !Ref OggInstanceKeyPair
       IamInstanceProfile: !Ref EC2InstanceProfile
@@ -105,8 +120,16 @@ Resources:
       SubnetId: !ImportValue peering-vpc-IntraSubnet1AZ1
       SecurityGroupIds:
         - !ImportValue peering-vpc-IntraVPCDefaultSecurityGroup
+        - !Ref SecurityGroup
       BlockDeviceMappings:
         - DeviceName: /dev/sda1
           Ebs:
             VolumeType: gp3
             VolumeSize: 30
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash
+          cd /tmp
+          sudo dnf --disablerepo="*" install -y https://s3.ap-northeast-1.amazonaws.com/amazon-ssm-ap-northeast-1/latest/linux_amd64/amazon-ssm-agent.rpm
+          sudo systemctl enable amazon-ssm-agent
+          sudo systemctl start amazon-ssm-agent

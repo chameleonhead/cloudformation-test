@@ -35,9 +35,10 @@ Resources:
       GroupDescription: OGG Security Group
       VpcId: !ImportValue peering-vpc-VPC
       SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 0
-          ToPort: 65535
+        - IpProtocol: '-1'
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: '-1'
           CidrIp: 0.0.0.0/0
       Tags:
         - Key: Name
@@ -74,7 +75,7 @@ Resources:
   OggInstance:
     Type: AWS::EC2::Instance
     Properties:
-      ImageId: ami-087bd73fc10ea41af
+      ImageId: ami-0c955bbc0d55874fb
       InstanceType: t2.micro
       KeyName: !Ref OggInstanceKeyPair
       IamInstanceProfile: !Ref EC2InstanceProfile
@@ -86,3 +87,11 @@ Resources:
           Ebs:
             VolumeType: gp3
             VolumeSize: 30
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash
+          cd /tmp
+          sudo dnf install -y python3
+          sudo dnf install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
+          sudo systemctl enable amazon-ssm-agent
+          sudo systemctl start amazon-ssm-agent
