@@ -1,0 +1,180 @@
+# aws cloudformation create-stack --stack-name image-builder --template-body file://image-builder.yml --capabilities CAPABILITY_IAM
+# aws cloudformation update-stack --stack-name image-builder --template-body file://image-builder.yml --capabilities CAPABILITY_IAM
+# aws cloudformation delete-stack --stack-name image-builder
+
+AWSTemplateFormatVersion: 2010-09-09
+
+Resources:
+  KeyPair:
+    Type: AWS::EC2::KeyPair
+    Properties:
+      KeyName: !Sub ${AWS::StackName}-keypair
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-keypair
+
+  IAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+        - arn:aws:iam::aws:policy/EC2InstanceProfileForImageBuilder
+      Policies:
+        - PolicyName: res-s3-access
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                Resource:
+                  - !Sub arn:aws:s3:::image-builder-infrastructure-logs-${AWS::AccountId}-${AWS::Region}
+                  - !Sub arn:aws:s3:::image-builder-infrastructure-logs-${AWS::AccountId}-${AWS::Region}/*
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                  - s3:GetObject
+                Resource:
+                  - !Sub arn:aws:s3:::image-builder-infrastructure-res-${AWS::AccountId}-${AWS::Region}
+                  - !Sub arn:aws:s3:::image-builder-infrastructure-res-${AWS::AccountId}-${AWS::Region}/*
+
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+        - !Ref IAMRole
+
+  InfrastructureConfiguration:
+    Type: AWS::ImageBuilder::InfrastructureConfiguration
+    Properties:
+      Name: !Sub ${AWS::StackName}-infrastructure-configuration
+      InstanceProfileName: !Ref InstanceProfile
+      InstanceTypes:
+        - t2.micro
+      SecurityGroupIds:
+        - !ImportValue image-builder-infrastructure-VpcDefaultSecurityGroupId
+      SubnetId: !ImportValue image-builder-infrastructure-Subnet0Id
+      TerminateInstanceOnFailure: false
+      Logging:
+        S3Logs:
+          S3BucketName: !Sub image-builder-infrastructure-logs-${AWS::AccountId}-${AWS::Region}
+          S3KeyPrefix: infrastructure-configuration
+      KeyPair: !Ref KeyPair
+
+  BuildComponent:
+    Type: AWS::ImageBuilder::Component
+    Properties:
+      Name: !Sub ${AWS::StackName}-build-component
+      Description: Build component for the image builder
+      Platform: Linux
+      Data: !Sub |
+        name: ogg-installation
+        description: Oracle Database Client Installation
+        schemaVersion: 1.0
+
+        phases:
+          - name: build
+            steps:
+              - name: UpdatePackages
+                action: ExecuteBash
+                inputs:
+                  commands:
+                    - dnf config-manager --set-enabled codeready-builder-for-rhel-8-rhui-rpms 
+                    - dnf upgrade -y
+              - name: InstallPackages
+                action: ExecuteBash
+                inputs:
+                  commands:
+                    - dnf install -y unzip
+                    # Oracle Database 向けのパッケージ
+                    # https://docs.oracle.com/cd/F19136_01/lacli/supported-red-hat-enterprise-linux-8-distributions-for-x86-64.html#GUID-B1487167-84F8-4F8D-AC31-A4E8F592374B
+                    - dnf install -y bc binutils elfutils-libelf elfutils-libelf-devel fontconfig-devel glibc glibc-devel ksh libaio libaio-devel libXrender libX11 libXau libXi libXtst libgcc libnsl librdmacm libstdc++ libstdc++-devel libxcb libibverbs make policycoreutils policycoreutils-python-utils smartmontools sysstat
+                    # Oracle Database Client 向けの追加パッケージ
+                    - dnf install -y libnsl2 libnsl2-devel net-tools nfs-utils
+              - name: CreateOracleUser
+                action: ExecuteBash
+                inputs:
+                  commands:
+                    - groupadd -g 54321 oinstall && useradd  -u 54321 -g oinstall oracle
+                    - mkdir -p /opt/oracle && chown -R oracle:oinstall /opt/oracle && chmod -R 775 /opt/oracle
+              - name: InstallDabaseClient
+                action: ExecuteBash
+                inputs:
+                  commands:
+                    - sudo -u oracle mkdir -p /opt/oracle/install
+                    - sudo -u oracle aws s3 cp --no-progress s3://image-builder-infrastructure-res-${AWS::AccountId}-${AWS::Region}/install/oracle/LINUX.X64_193000_client.zip /opt/oracle/install/
+                    - sudo -u oracle aws s3 cp --no-progress s3://image-builder-infrastructure-res-${AWS::AccountId}-${AWS::Region}/install/oracle/client_install.rsp /opt/oracle/install/
+                    - sudo -u oracle unzip -q /opt/oracle/install/LINUX.X64_193000_client.zip -d /opt/oracle/install/
+                    - sudo -u oracle CV_ASSUME_DISTID=OEL8.1 /opt/oracle/install/client/runInstaller -silent -waitForCompletion -ignoreSysPrereqs -responseFile /opt/oracle/install/client_install.rsp || true
+                    - /home/oracle/oraInventory/orainstRoot.sh
+              - name: InstallOracleGoldenGate
+                action: ExecuteBash
+                inputs:
+                  commands:
+                    - sudo -u oracle mkdir -p /opt/oracle/install
+                    - sudo -u oracle aws s3 cp --no-progress s3://image-builder-infrastructure-res-${AWS::AccountId}-${AWS::Region}/install/oracle/191001_fbo_ggs_Linux_x64_services_shiphome.zip /opt/oracle/install/
+                    - sudo -u oracle aws s3 cp --no-progress s3://image-builder-infrastructure-res-${AWS::AccountId}-${AWS::Region}/install/oracle/oggcore.rsp /opt/oracle/install/
+                    - sudo -u oracle aws s3 cp --no-progress s3://image-builder-infrastructure-res-${AWS::AccountId}-${AWS::Region}/install/oracle/oggca.rsp /opt/oracle/install/
+                    - sudo -u oracle unzip -q /opt/oracle/install/191001_fbo_ggs_Linux_x64_services_shiphome.zip -d /opt/oracle/install/
+                    - sudo -u oracle /opt/oracle/install/fbo_ggs_Linux_x64_services_shiphome/Disk1/runInstaller -silent -waitForCompletion -ignoreSysPrereqs -responseFile /opt/oracle/install/oggcore.rsp
+      Version: 1.0.0
+      ChangeDescription: Initial version
+
+  LogGroupImageBuilder:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/imagebuilder/${AWS::StackName}-image-recipe
+      RetentionInDays: 731
+
+  ImageRecipe:
+    DependsOn:
+      - LogGroupImageBuilder
+    Type: AWS::ImageBuilder::ImageRecipe
+    Properties:
+      Name: !Sub ${AWS::StackName}-image-recipe
+      Version: 1.0.0
+      ParentImage: arn:aws:imagebuilder:ap-northeast-1:aws:image/red-hat-enterprise-linux-8-x86/x.x.x
+      Components:
+        - ComponentArn: arn:aws:imagebuilder:ap-northeast-1:aws:component/aws-cli-version-2-linux/1.0.4/1
+        - ComponentArn: arn:aws:imagebuilder:ap-northeast-1:aws:component/amazon-cloudwatch-agent-linux/1.0.1/1
+        - ComponentArn: !Ref BuildComponent
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: 20
+            VolumeType: gp3
+            DeleteOnTermination: true
+      Tags:
+        Name: !Sub ${AWS::StackName}-image-recipe
+
+  Image:
+    Type: AWS::ImageBuilder::Image
+    Properties:
+      ImageRecipeArn: !Ref ImageRecipe
+      InfrastructureConfigurationArn: !Ref InfrastructureConfiguration
+      ImageScanningConfiguration:
+        ImageScanningEnabled: true
+      ImageTestsConfiguration:
+        ImageTestsEnabled: true
+      Tags:
+        Name: !Sub ${AWS::StackName}-image
+
+  ImageParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      DataType: aws:ec2:image
+      Name: !Sub "${AWS::StackName}-ami"
+      Type: String
+      Value: !GetAtt "Image.ImageId"
+      Description: !Sub "${AWS::StackName}-ami"

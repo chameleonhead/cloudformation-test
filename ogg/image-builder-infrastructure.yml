@@ -1,0 +1,147 @@
+# aws cloudformation create-stack --stack-name image-builder-infrastructure --template-body file://image-builder-infrastructure.yml
+# aws cloudformation update-stack --stack-name image-builder-infrastructure --template-body file://image-builder-infrastructure.yml
+# aws cloudformation delete-stack --stack-name image-builder-infrastructure
+
+AWSTemplateFormatVersion: 2010-09-09
+
+Parameters:
+  CidrBlock:
+    Type: String
+    Default: 172.18.0.0/16
+
+Resources:
+  Vpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref CidrBlock
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-vpc
+
+  Subnet0:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      CidrBlock: !Select [0, !Cidr [!Ref CidrBlock, 16, 12]]
+      AvailabilityZone: !Select [0, !GetAZs ]
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-subnet0
+  Subnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      CidrBlock: !Select [1, !Cidr [!Ref CidrBlock, 16, 12]]
+      AvailabilityZone: !Select [1, !GetAZs ]
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-subnet1
+
+  Subnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      CidrBlock: !Select [2, !Cidr [!Ref CidrBlock, 16, 12]]
+      AvailabilityZone: !Select [2, !GetAZs ]
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-subnet2
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-igw
+
+  VpcGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref Vpc
+      InternetGatewayId: !Ref InternetGateway
+
+  RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-rt
+
+  Route:
+    Type: AWS::EC2::Route
+    DependsOn: VpcGatewayAttachment
+    Properties:
+      RouteTableId: !Ref RouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  SubnetRouteTableAssociation0:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref Subnet0
+      RouteTableId: !Ref RouteTable
+
+  SubnetRouteTableAssociation1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref Subnet1
+      RouteTableId: !Ref RouteTable
+
+  SubnetRouteTableAssociation2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref Subnet2
+      RouteTableId: !Ref RouteTable
+
+  LogBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${AWS::StackName}-logs-${AWS::AccountId}-${AWS::Region}
+      LifecycleConfiguration:
+        Rules:
+          - Id: ExpireLogs
+            Status: Enabled
+            ExpirationInDays: 7
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-logs-${AWS::AccountId}-${AWS::Region}
+
+  ResourceBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${AWS::StackName}-res-${AWS::AccountId}-${AWS::Region}
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-res-${AWS::AccountId}-${AWS::Region}
+
+Outputs:
+  VpcId:
+    Value: !Ref Vpc
+    Export:
+      Name: !Sub ${AWS::StackName}-VpcId
+  VpcDefaultSecurityGroupId:
+    Value: !GetAtt Vpc.DefaultSecurityGroup
+    Export:
+      Name: !Sub ${AWS::StackName}-VpcDefaultSecurityGroupId
+  Subnet0Id:
+    Value: !Ref Subnet0
+    Export:
+      Name: !Sub ${AWS::StackName}-Subnet0Id
+  Subnet1Id:
+    Value: !Ref Subnet1
+    Export:
+      Name: !Sub ${AWS::StackName}-Subnet1Id
+  Subnet2Id:
+    Value: !Ref Subnet2
+    Export:
+      Name: !Sub ${AWS::StackName}-Subnet2Id
+  RouteTableId:
+    Value: !Ref RouteTable
+    Export:
+      Name: !Sub ${AWS::StackName}-RouteTableId
