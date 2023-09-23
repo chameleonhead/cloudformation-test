@@ -90,10 +90,10 @@ Resources:
       GroupDescription: OGG Security Group
       VpcId: !ImportValue peering-vpc-IntraVPC
       SecurityGroupIngress:
-        - IpProtocol: '-1'
+        - IpProtocol: "-1"
           CidrIp: 0.0.0.0/0
       SecurityGroupEgress:
-        - IpProtocol: '-1'
+        - IpProtocol: "-1"
           CidrIp: 0.0.0.0/0
       Tags:
         - Key: Name
@@ -112,8 +112,8 @@ Resources:
       - VPCEndpointS3
     Type: AWS::EC2::Instance
     Properties:
-      ImageId: ami-0c955bbc0d55874fb
-      InstanceType: t2.micro
+      ImageId: "{{resolve:ssm:image-builder-ami}}"
+      InstanceType: t2.small
       KeyName: !Ref OggInstanceKeyPair
       IamInstanceProfile: !Ref EC2InstanceProfile
       PrivateIpAddress: !Ref OggInstanceIpAddress
@@ -130,6 +130,21 @@ Resources:
         Fn::Base64: |
           #!/bin/bash
           cd /tmp
-          sudo dnf --disablerepo="*" install -y https://s3.ap-northeast-1.amazonaws.com/amazon-ssm-ap-northeast-1/latest/linux_amd64/amazon-ssm-agent.rpm
-          sudo systemctl enable amazon-ssm-agent
-          sudo systemctl start amazon-ssm-agent
+          dnf --disablerepo="*" install -y https://s3.ap-northeast-1.amazonaws.com/amazon-ssm-ap-northeast-1/latest/linux_amd64/amazon-ssm-agent.rpm
+          systemctl enable amazon-ssm-agent
+          systemctl start amazon-ssm-agent
+
+          dnf --disablerepo="*" install -y https://s3.ap-northeast-1.amazonaws.com/amazon-ssm-ap-northeast-1/latest/linux_amd64/amazon-ssm-agent.rpm
+          systemctl enable amazon-ssm-agent
+          systemctl start amazon-ssm-agent
+
+          sudo su oracle << EOF
+          export ORACLE_HOME=/opt/oracle/product/19.3.0/client_1
+          export OGG_HOME=/opt/oracle/product/19.1.0/oggcore_1
+          export PATH=$OGG_HOME/bin:$ORACLE_HOME/bin:$PATH
+          $OGG_HOME/bin/oggca.sh -silent -responseFile /tmp/orainstall/oggca.rsp
+          EOF
+
+          /opt/oracle/ogg_deployments/ServiceManager/bin/registerServiceManager.sh
+          systemctl enable OracleGoldenGate
+          systemctl start OracleGoldenGate

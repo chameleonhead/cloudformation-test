@@ -65,7 +65,7 @@ Resources:
       SecurityGroupIds:
         - !ImportValue image-builder-infrastructure-VpcDefaultSecurityGroupId
       SubnetId: !ImportValue image-builder-infrastructure-Subnet0Id
-      TerminateInstanceOnFailure: false
+      TerminateInstanceOnFailure: true
       Logging:
         S3Logs:
           S3BucketName: !Sub image-builder-infrastructure-logs-${AWS::AccountId}-${AWS::Region}
