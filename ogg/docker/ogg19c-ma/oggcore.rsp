@@ -74,7 +74,7 @@ DATABASE_LOCATION=Not applicable for a Services installation.
 # This is an optional parameter if installing on
 # Windows based Operating System.
 #-------------------------------------------------------------------------------
-INVENTORY_LOCATION=/opt/oracle/oraInventory
+INVENTORY_LOCATION=/home/oracle/oraInventory
 
 #-------------------------------------------------------------------------------
 # Unix group to be set for the inventory directory.

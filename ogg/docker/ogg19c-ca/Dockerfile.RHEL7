@@ -52,7 +52,10 @@ RUN unzip -q /tmp/orainstall/LINUX.X64_193000_client.zip -d /tmp/orainstall
 
 # oracle ユーザーの作成
 RUN groupadd -g 54321 oinstall && \
-    useradd  -u 54321 -g oinstall oracle
+    useradd  -u 54321 -g oinstall oracle && \
+    mkdir -p /home/oracle && \
+    chown -R oracle:oinstall /home/oracle && \
+    chmod -R 750 /home/oracle
 
 # oracle ユーザーに sudo 権限を付与 (コンテナでの動作確認用)
 RUN yum install -y passwd && echo oracle | passwd --stdin oracle && usermod -aG wheel oracle
@@ -67,7 +70,7 @@ RUN mkdir -p /opt/oracle && \
 USER oracle
 RUN /tmp/orainstall/client/runInstaller -silent -waitForCompletion -ignoreSysPrereqs -responseFile /tmp/orainstall/client_install.rsp || true
 USER root
-RUN /opt/oracle/oraInventory/orainstRoot.sh
+RUN /home/oracle/oraInventory/orainstRoot.sh
 USER oracle
 ENV ORACLE_HOME=/opt/oracle/product/19.3.0/client_1 \
     PATH=/opt/oracle/product/19.3.0/client_1/bin:$PATH

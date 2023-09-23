@@ -71,7 +71,7 @@ DATABASE_LOCATION=/opt/oracle/product/19.3.0/client_1
 # This is an optional parameter if installing on
 # Windows based Operating System.
 #-------------------------------------------------------------------------------
-INVENTORY_LOCATION=/opt/oracle/oraInventory
+INVENTORY_LOCATION=/home/oracle/oraInventory
 
 #-------------------------------------------------------------------------------
 # Unix group to be set for the inventory directory.  
