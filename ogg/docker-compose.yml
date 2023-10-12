@@ -22,17 +22,22 @@ services:
       - ./docker/ogg19c-ca/tns_admin/source:/opt/oracle/product/19.3.0/client_1/network/admin
       - ./docker/ogg19c-ca/data/source:/opt/oracle/ogg
     environment:
-      - TARGET_OGG_HOST=target-ogg-21ma
+      - TARGET_OGG_HOST=target-ogg-proxy
       - TARGET_OGG_PORT=12003
-  target-ogg-21ma:
+  target-ogg-proxy:
+    image: hpello/tcp-proxy
+    command: target-ogg-19ma 12003
+    environment:
+      - LISTEN_PORT=12003
+  target-ogg-19ma:
     platform: linux/x86_64
     build:
-      context: ./docker/ogg21c-ma
-      dockerfile: Dockerfile
+      context: ./docker/ogg19c-ma
+      dockerfile: Dockerfile.RHEL8
     volumes:
-      - ./docker/ogg21c-ma/scripts/target-setup:/opt/oracle/scripts/setup
-      - ./docker/ogg21c-ma/tns_admin/target:/opt/oracle/network/admin
-      - ./docker/ogg21c-ma/data/target:/opt/oracle/ogg_deployments
+      - ./docker/ogg19c-ma/scripts/target-setup:/opt/oracle/scripts/setup
+      - ./docker/ogg19c-ma/tns_admin/target:/opt/oracle/product/19.3.0/client_1/network/admin
+      - ./docker/ogg19c-ma/data/target:/opt/oracle/ogg_deployments
     environment:
       - PORT_BASE=12000
     ports:
