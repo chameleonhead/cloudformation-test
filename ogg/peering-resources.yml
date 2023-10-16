@@ -156,6 +156,8 @@ Resources:
           IEOF
           $OGG_HOME/bin/oggca.sh -silent -responseFile /opt/oracle/install/oggca.rsp
           EOF
+          PID=$(cat "/opt/oracle/ogg_deployments/ServiceManager/var/run/ServiceManager.pid" 2>/dev/null)
+          kill -0 ${PID} 2>/dev/null
 
           /opt/oracle/ogg_deployments/ServiceManager/bin/registerServiceManager.sh
           systemctl enable OracleGoldenGate
