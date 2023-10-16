@@ -138,11 +138,11 @@ Resources:
           systemctl enable amazon-ssm-agent
           systemctl start amazon-ssm-agent
 
-          sudo su oracle << EOF
+          sudo su oracle << 'EOF'
           export ORACLE_HOME=/opt/oracle/product/19.3.0/client_1
           export OGG_HOME=/opt/oracle/product/19.1.0/oggcore_1
           export PATH=$OGG_HOME/bin:$ORACLE_HOME/bin:$PATH
-          $OGG_HOME/bin/oggca.sh -silent -responseFile /tmp/orainstall/oggca.rsp
+          $OGG_HOME/bin/oggca.sh -silent -responseFile /opt/oracle/install/oggca.rsp
           EOF
 
           /opt/oracle/ogg_deployments/ServiceManager/bin/registerServiceManager.sh
