@@ -1,26 +1,19 @@
 version: "3"
 services:
-  source-db-19:
+  source-ogg-12-db-12:
     platform: linux/x86_64
+    ulimits:
+      stack: 1048576
     build:
-      context: ./docker/oracle19c
+      context: ./docker/oracle12c-ogg12c-ca
       dockerfile: Dockerfile
-      args:
-        DB_EDITION: EE
+      shm_size: 256m
     volumes:
-      - ./docker/oracle19c/scripts/source-setup:/opt/oracle/scripts/setup
-      - ./docker/oracle19c/data/source:/opt/oracle/oradata
+      - ./docker/oracle12c-ogg12c-ca/scripts/source-setup:/opt/oracle/scripts/setup
+      - ./docker/oracle12c-ogg12c-ca/data/source-oradata:/opt/oracle/oradata
+      - ./docker/oracle12c-ogg12c-ca/data/source-ogg:/opt/oracle/ogg
     ports:
       - 1521:1521
-  source-ogg-19ca:
-    platform: linux/x86_64
-    build:
-      context: ./docker/ogg19c-ca
-      dockerfile: Dockerfile.RHEL8
-    volumes:
-      - ./docker/ogg19c-ca/scripts/source-setup:/opt/oracle/scripts/setup
-      - ./docker/ogg19c-ca/tns_admin/source:/opt/oracle/product/19.3.0/client_1/network/admin
-      - ./docker/ogg19c-ca/data/source:/opt/oracle/ogg
     environment:
       - TARGET_OGG_HOST=target-ogg-proxy
       - TARGET_OGG_PORT=12003

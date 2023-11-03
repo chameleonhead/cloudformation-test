@@ -74,34 +74,24 @@ RUN mkdir -p /opt/oracle && \
     chmod -R 775 /opt/oracle
 
 USER oracle
-
-# Oracle Database Client 12c のインストールに必要なファイルをコピー
 RUN mkdir /home/oracle/install
+# Oracle Database Client 12c のインストールに必要なファイルをコピー
 COPY --chown=oracle:oinstall linuxx64_12201_database.zip /home/oracle/install/
 COPY --chown=oracle:oinstall db_install.rsp /home/oracle/install/
 COPY --chown=oracle:oinstall netca.rsp /home/oracle/install/
 COPY --chown=oracle:oinstall dbca.rsp /home/oracle/install/
-
-# Oracle Database Client 12c の配置
-# https://docs.oracle.com/cd/F19136_01/lacli/running-oracle-universal-installer-to-install-oracle-database-client.html#GUID-DB056013-736D-4A7A-8C98-607103E2F07F
-# linuxx64_12201_database.zip を展開すると database/runInstaller が現れる
-RUN unzip -q /home/oracle/install/linuxx64_12201_database.zip -d /home/oracle/install && \
-    /home/oracle/install/database/runInstaller -silent -waitForCompletion -ignoreSysPrereqs -responseFile /home/oracle/install/db_install.rsp || true && \
-    rm -rf /home/oracle/install/database
-USER root
-RUN /home/oracle/oraInventory/orainstRoot.sh && /opt/oracle/product/12c/dbhome_1/root.sh
-USER oracle
-ENV ORACLE_HOME=/opt/oracle/product/12c/dbhome_1 \
-    PATH=/opt/oracle/product/12c/dbhome_1/bin:$PATH
-
 # Oracle GoldenGate Classic Architecture のインストールに必要なファイルをコピー
-COPY 123010_fbo_ggs_Linux_x64_shiphome.zip /home/oracle/install/
-COPY oggcore.rsp /home/oracle/install/
+COPY --chown=oracle:oinstall 123010_fbo_ggs_Linux_x64_shiphome.zip /home/oracle/install/
+COPY --chown=oracle:oinstall oggcore.rsp /home/oracle/install/
 
-ENV OGG_HOME=/opt/oracle/ogg \
-    LD_LIBRARY_PATH=$ORACLE_HOME/lib
+USER root
+ENV ORACLE_HOME=/opt/oracle/product/12c/dbhome_1
+ENV PATH=$ORACLE_HOME/bin:$PATH
+ENV OGG_HOME=/opt/oracle/ogg
+ENV LD_LIBRARY_PATH=$ORACLE_HOME/lib
 ENV PATH=$OGG_HOME:$PATH
 
 WORKDIR /opt/oracle/ogg
 COPY docker-entrypoint.sh /
+RUN chmod +x /docker-entrypoint.sh
 CMD [ "/docker-entrypoint.sh" ]
