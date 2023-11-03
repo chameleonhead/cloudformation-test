@@ -1,6 +1,4 @@
--- CDBユーザー権限
 -- https://docs.oracle.com/cd/F51462_01/ggmas/quickstart-your-data-replication-oracle-goldengate-microservices-architecture.html#GUID-FAAAFDB1-FF77-4EF5-A85C-3FBBB832CCD1
--- CGGNORTH DATABASE SETUP AT CDB LEVEL
 alter system set enable_goldengate_replication=TRUE scope=both;
 alter system set streams_pool_size=100m scope=both;
 

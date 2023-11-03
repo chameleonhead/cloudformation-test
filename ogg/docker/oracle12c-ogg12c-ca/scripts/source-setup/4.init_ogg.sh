@@ -1,12 +1,12 @@
 # 接続できるまで待ち
-sqlplus /nolog <<EOF
+sqlplus /nolog <<EOF >/dev/null
 WHENEVER SQLERROR EXIT FAILURE
 conn ggadmin@SRC_ORCL/passw0rd
 EOF
 while [ $? -ne 0 ];
 do
     sleep 60
-    sqlplus /nolog <<EOF
+    sqlplus /nolog <<EOF >/dev/null
 WHENEVER SQLERROR EXIT FAILURE
 conn ggadmin@SRC_ORCL/passw0rd
 EOF

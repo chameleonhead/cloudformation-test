@@ -3,14 +3,14 @@ export PATH=${OGG_HOME}/bin:${OGG_HOME}/lib/instantclient:$PATH
 export LD_LIBRARY_PATH=${OGG_HOME}/lib/instantclient:${OGG_HOME}/lib
 export TNS_ADMIN=/opt/oracle/network/admin
 
-sqlplus /nolog <<EOF
+sqlplus /nolog <<EOF >/dev/null
 WHENEVER SQLERROR EXIT FAILURE
 conn ggadmin@DST_ORCLPDB1/passw0rd
 EOF
 while [ $? -ne 0 ];
 do
     sleep 60
-    sqlplus /nolog <<EOF
+    sqlplus /nolog <<EOF >/dev/null
 WHENEVER SQLERROR EXIT FAILURE
 conn ggadmin@DST_ORCLPDB1/passw0rd
 EOF

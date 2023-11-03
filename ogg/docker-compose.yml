@@ -2,16 +2,13 @@ version: "3"
 services:
   source-ogg-12-db-12:
     platform: linux/x86_64
-    ulimits:
-      stack: 1048576
     build:
       context: ./docker/oracle12c-ogg12c-ca
       dockerfile: Dockerfile
       shm_size: 256m
     volumes:
       - ./docker/oracle12c-ogg12c-ca/scripts/source-setup:/opt/oracle/scripts/setup
-      - ./docker/oracle12c-ogg12c-ca/data/source-oradata:/opt/oracle/oradata
-      - ./docker/oracle12c-ogg12c-ca/data/source-ogg:/opt/oracle/ogg
+      - ./docker/oracle12c-ogg12c-ca/data/source:/opt/oracle
     ports:
       - 1521:1521
     environment:

@@ -1,6 +1,9 @@
 #!/bin/bash
 export ORACLE_SID=ORCL
-if [ ! -e /opt/oracle/oradata ]; then
+
+if [ ! -e /opt/oracle/product/12c/dbhome_1 ]; then
+    chown -R 54321:54321 /opt/oracle
+
     # Oracle Database Client 12c の配置
     # linuxx64_12201_database.zip を展開すると database/runInstaller が現れる
     su oracle - << EOT
@@ -9,6 +12,11 @@ unzip -q /home/oracle/install/linuxx64_12201_database.zip -d /home/oracle/instal
 rm -rf /home/oracle/install/database
 EOT
     /home/oracle/oraInventory/orainstRoot.sh && /opt/oracle/product/12c/dbhome_1/root.sh
+    if [ $? -ne 0 ]; then
+        echo "ERROR: docker-entrypoint.sh failed."
+        exit 1
+    fi
+
     # Oracle Database の作成
     su oracle - << EOT
 netca -silent -responseFile /home/oracle/install/netca.rsp
@@ -21,8 +29,6 @@ EOT
 unzip -q /home/oracle/install/123010_fbo_ggs_Linux_x64_shiphome.zip -d /home/oracle/install
 /home/oracle/install/fbo_ggs_Linux_x64_shiphome/Disk1/runInstaller -silent -waitForCompletion -ignoreSysPrereqs -responseFile /home/oracle/install/oggcore.rsp
 rm -rf /home/oracle/install/fbo_ggs_Linux_x64_shiphome
-EOT
-    su oracle - << EOT
 echo "CREATE SUBDIRS" | $OGG_HOME/ggsci
 cat << EOF > $OGG_HOME/dirprm/mgr.prm
 PORT 7809
@@ -31,8 +37,9 @@ AUTORESTART ER *, RETRIES 3, WAITMINUTES 5
 EOF
 EOT
 
-    SCRIPTS_ROOT="/opt/oracle/scripts/setup"
-    su oracle - << EOT
+    # 初期スクリプトの実行
+    su oracle - << 'EOT'
+SCRIPTS_ROOT="/opt/oracle/scripts/setup"
 # Execute custom provided files (only if directory exists and has files in it)
 if [ -d "$SCRIPTS_ROOT" ] && [ -n "$(ls -A "$SCRIPTS_ROOT")" ]; then
 
