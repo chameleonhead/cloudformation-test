@@ -30,9 +30,13 @@ if [ ! -e /opt/oracle/ogg_deployments/ServiceManager ]; then
 
 fi;
 
+export ORACLE_HOME=/opt/oracle/product/19.3.0/client_1
+export OGG_HOME=/opt/oracle/product/19.1.0/oggcore_1
+export PATH=$OGG_HOME/bin:$ORACLE_HOME/bin:$PATH
 export OGG_DEPLOYMENT_HOME=/opt/oracle/ogg_deployments/ServiceManager
 export OGG_ETC_HOME=$OGG_DEPLOYMENT_HOME/etc
 export OGG_VAR_HOME=$OGG_DEPLOYMENT_HOME/var
+${OGG_HOME}/bin/ServiceManager
 trap "$OGG_DEPLOYMENT_HOME/bin/stopSM.sh; exit" SIGINT SIGTERM
 $OGG_DEPLOYMENT_HOME/bin/startSM.sh
 tail -F "${OGG_DEPLOYMENT_HOME}"/var/log/ServiceManager.log
