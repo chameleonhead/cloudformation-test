@@ -29,7 +29,7 @@ EOF
 cat <<EOF > $OGG_HOME/dirprm/capture1.prm
 EXTRACT capture1
 USERIDALIAS src_orcl
-EXTTRAIL lt
+EXTTRAIL dirdat/lt
 DDL
 TABLE HR.*;
 EOF
@@ -38,7 +38,7 @@ ggsci << EOF
 DBLOGIN USERIDALIAS src_orcl
 REGISTER EXTRACT capture1 DATABASE
 ADD EXTRACT capture1, INTEGRATED TRANLOG, BEGIN NOW
-ADD EXTTRAIL lt, EXTRACT capture1, megabytes 500
+ADD EXTTRAIL dirdat/lt, EXTRACT capture1, megabytes 500
 EOF
 
 cat <<EOF > $OGG_HOME/dirprm/pump1.prm
@@ -51,7 +51,7 @@ EOF
 
 ggsci << EOF
 DBLOGIN USERIDALIAS src_orcl
-ADD EXTRACT pump1, EXTTRAILSOURCE lt, BEGIN NOW
+ADD EXTRACT pump1, EXTTRAILSOURCE dirdat/lt, BEGIN NOW
 ADD RMTTRAIL rt, EXTRACT pump1
 INFO ALL
 EOF
