@@ -1,0 +1,4 @@
+.venv/
+dist/
+lib.egg-info/
+site-packages/
