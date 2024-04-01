@@ -1,0 +1,146 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Resources:
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub spa-bucket-${AWS::AccountId}
+
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: "sts:AssumeRole"
+      Policies:
+        - PolicyName: LambdaS3AccessPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource: !Sub "arn:aws:s3:::${S3Bucket}/*"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Path: "/"
+
+  LambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: S3ProxyLambdaFunction
+      Runtime: python3.10
+      Handler: index.lambda_handler
+      Environment:
+        Variables:
+          BUCKET_NAME: !Ref S3Bucket
+      Code:
+        ZipFile: |
+          import boto3
+          from datetime import datetime
+          from botocore.exceptions import ClientError
+          import os
+
+          s3 = boto3.client('s3')
+          BUCKET_NAME = os.environ['BUCKET_NAME']
+          PUBLIC_PREFIX = 'public/'
+
+          def lambda_handler(event, context):
+              path = event['path'].lstrip('/')
+              if path.endswith('/') or not path:
+                  path += 'index.html'
+
+              s3_object_key = f"{PUBLIC_PREFIX}{path}"
+              headers = event.get('headers', {})
+
+              try:
+                  s3_response = s3.get_object(
+                      Bucket=BUCKET_NAME,
+                      Key=s3_object_key,
+                      IfNoneMatch=headers.get('If-None-Match'),
+                      IfModifiedSince=datetime.strptime(headers.get('If-Modified-Since', ''), '%a, %d %b %Y %H:%M:%S GMT') if headers.get('If-Modified-Since') else None,
+                  )
+
+              except ClientError as e:
+                  error_code = e.response['Error']['Code']
+                  if error_code in ['NoSuchKey', '404']:
+                      # 404の場合、index.htmlを再度試行
+                      s3_object_key = f"{PUBLIC_PREFIX}index.html"
+                      s3_response = s3.get_object(Bucket=BUCKET_NAME, Key=s3_object_key)
+                  elif error_code == '304':
+                      # キャッシュが有効の場合
+                      return {'statusCode': 304, 'headers': set_security_headers({})}
+                  else:
+                      return {'statusCode': 500, 'body': 'Internal Server Error'}
+
+              body = s3_response['Body'].read()
+              response = {
+                  'statusCode': 200,
+                  'body': body.decode('utf-8'),
+                  'headers': set_security_headers({
+                      'Content-Type': s3_response['ContentType'],
+                      'ETag': s3_response['ETag'],
+                      'Last-Modified': s3_response['LastModified'].strftime('%a, %d %b %Y %H:%M:%S GMT'),
+                  }),
+              }
+
+              return response
+
+          def set_security_headers(headers):
+              headers.update({
+                  'X-Content-Type-Options': 'nosniff',
+                  'X-Frame-Options': 'DENY',
+                  'Content-Security-Policy': "default-src 'self'; script-src 'self'; object-src 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self';",
+                  'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload',
+              })
+              return headers
+      Role: !GetAtt LambdaExecutionRole.Arn
+
+  LambdaInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref LambdaFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${HttpApi}/*/*
+
+  HttpApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: S3ProxyHttpApi
+      ProtocolType: HTTP
+      Description: HTTP API Gateway to proxy requests to S3 via Lambda
+
+  LambdaIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref HttpApi
+      Description: Integration for Lambda proxy
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaFunction.Arn}/invocations
+      PayloadFormatVersion: "2.0"
+
+  DefaultRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: "ANY /{proxy+}"
+      Target: !Join
+        - ""
+        - - "integrations/"
+          - !Ref LambdaIntegration
+
+  Stage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref HttpApi
+      AutoDeploy: true
+      StageName: $default
+
+Outputs:
+  HttpApiUrl:
+    Description: "URL of HTTP API Gateway"
+    Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com"
