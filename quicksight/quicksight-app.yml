@@ -105,7 +105,7 @@ Resources:
         Variables:
           BUCKET_NAME: !Ref S3Bucket
           IDP_ISSUER: !Sub https://cognito-idp.${AWS::Region}.amazonaws.com/${CognitoUserPool}
-          IDP_AUDIENCE: !Ref CognitoUserPool
+          APP_CLIENT_ID: !GetAtt CognitoUserPoolClient.ClientId
       Code:
         S3Bucket: !Ref LambdaS3Bucket
         S3Key: !Ref LambdaS3KeyS3Proxy
@@ -145,7 +145,6 @@ Resources:
         Variables:
           BUCKET_NAME: !Ref S3Bucket
           IDP_ISSUER: !Sub https://cognito-idp.${AWS::Region}.amazonaws.com/${CognitoUserPool}
-          IDP_AUDIENCE: !Ref CognitoUserPool
           IDP_URL: !Sub "https://${CognitoUserPoolDomain}.auth.${AWS::Region}.amazoncognito.com"
           APP_CLIENT_ID: !GetAtt CognitoUserPoolClient.ClientId
           APP_REDIRECT_URI: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/auth/callback"

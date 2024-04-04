@@ -1,20 +1,14 @@
 import sys
 
 sys.path.append("./python")
-import boto3
 import json
 import os
-from jose import jwt, jwk
+from jose import jwt, jwk, ExpiredSignatureError, JWTError
 import requests
 import urllib.parse
 import http.cookies
 
-s3 = boto3.client("s3")
-BUCKET_NAME = os.environ["BUCKET_NAME"]
-PUBLIC_PREFIX = "public/"
-
 IDP_ISSUER = os.environ["IDP_ISSUER"]
-IDP_AUDIENCE = os.environ["IDP_AUDIENCE"]
 IDP_ISSUER_KEYS_URL = f"{IDP_ISSUER}/.well-known/jwks.json"
 IDP_URL = os.environ["IDP_URL"]
 IDP_LOGIN_PAGE = f"{IDP_URL}/login"
@@ -25,45 +19,10 @@ APP_REDIRECT_URI = os.environ["APP_REDIRECT_URI"]
 
 
 def lambda_handler(event, context):
-    cookies_str = event.get("headers", {}).get("Cookie", "")
-    cookies = http.cookies.SimpleCookie(cookies_str)
-    token = cookies.get("id_token").value if "id_token" in cookies else None
-    domain_name = event["requestContext"]["domainName"]
-    path = event.get(
-        "rawPath", event["requestContext"]["http"]["path"]
-    )  # HTTP API と REST API の両方に対応
+    path = event.get("rawPath", event["requestContext"]["http"]["path"])
+    # HTTP API と REST API の両方に対応
     query_string_parameters = event.get("queryStringParameters", {})
-
-    token_is_valid = False
-    if token:
-        # JWKSから公開鍵を取得
-        keys = requests.get(IDP_ISSUER_KEYS_URL).json()["keys"]
-        headers = jwt.get_unverified_headers(token)
-        kid = headers["kid"]
-
-        # kidにマッチする公開鍵を探す
-        key = next((key for key in keys if key["kid"] == kid), None)
-        if key:
-            try:
-                # 公開鍵を使用してトークンを検証
-                public_key = jwk.construct(key)
-                jwt.decode(
-                    token,
-                    public_key,
-                    algorithms=["RS256"],
-                    issuer=IDP_ISSUER,
-                    audience=IDP_AUDIENCE,
-                )
-                token_is_valid = True
-            except:
-                pass
-
-    if path == "/auth/login":
-        if token_is_valid:
-            return redirect_to(query_string_parameters.get("redirect"))
-        else:
-            return redirect_to_cognito()
-    elif path == "/auth/callback":
+    if path == "/auth/callback":
         # Cognitoの認証コードをクエリパラメータから取得
         code = query_string_parameters.get("code")
         if not code:
@@ -91,35 +50,32 @@ def lambda_handler(event, context):
         if response.status_code == 200:
             # トークンの取得に成功した場合
             tokens = response.json()
-            id_token = tokens["id_token"]
-            access_token = tokens["access_token"]
-            refresh_token = tokens["refresh_token"]
             original_page = tokens.get("state")
 
             # トークンをクッキーに設定してリダイレクト
             headers = {
                 "Location": original_page if original_page else "/",
-            }
-            multiValueHeaders = {
-                "Set-Cookie": [
-                    f"id_token={id_token}; Secure; HttpOnly; Path=/",
-                    f"access_token={access_token}; Secure; HttpOnly; Path=/",
-                    f"refresh_token={refresh_token}; Secure; HttpOnly; Path=/",
-                ],
+                "Set-Cookie": f"tokens={urllib.parse.quote_plus(json.dumps(tokens))}; Secure; HttpOnly; Path=/",
             }
             return {
                 "statusCode": 302,
                 "headers": set_security_headers(headers),
-                "multiValueHeaders": multiValueHeaders,
                 "body": "",
             }
         else:
             # トークンの取得に失敗した場合
             return {
                 "statusCode": response.status_code,
-                headers: set_security_headers({}),
+                "headers": set_security_headers({}),
                 "body": response.text,
             }
+    tokens = get_tokens(event)
+
+    if path == "/auth/login":
+        if tokens:
+            return redirect_to(query_string_parameters.get("redirect"))
+        else:
+            return redirect_to_cognito(query_string_parameters.get("redirect"))
     else:
         return {
             "statusCode": 404,
@@ -136,12 +92,14 @@ def redirect_to(redirect_url):
     }
 
 
-def redirect_to_cognito():
+def redirect_to_cognito(redirect_url=None):
     login_page = f"{IDP_URL}/login"
     login_page += f"?response_type=code"
     login_page += f"&client_id={APP_CLIENT_ID}"
-    login_page += f"&redirect_uri={urllib.parse.quote(APP_REDIRECT_URI)}"
+    login_page += f"&redirect_uri={urllib.parse.quote_plus(APP_REDIRECT_URI)}"
     login_page += f"&scope=openid+profile+email"
+    if redirect_url:
+        login_page += f"&state={urllib.parse.quote_plus(redirect_url)}"
     return redirect_to(login_page)
 
 
@@ -155,3 +113,53 @@ def set_security_headers(headers):
         }
     )
     return headers
+
+
+def get_tokens(event):
+    cookies = event.get("cookies", [])
+    tokens = None
+    for cookie_str in cookies:
+        c = http.cookies.SimpleCookie(cookie_str)
+        tokens = c.get("tokens").value if "tokens" in c else None
+        if tokens:
+            tokens = json.loads(urllib.parse.unquote_plus(tokens))
+            break
+
+    if not tokens or not tokens.get("id_token"):
+        return None
+
+    id_token = tokens.get("id_token")
+    # JWKSから公開鍵を取得
+    keys = requests.get(IDP_ISSUER_KEYS_URL).json()["keys"]
+    headers = jwt.get_unverified_headers(id_token)
+    print(jwt.get_unverified_claims(id_token))
+    kid = headers["kid"]
+
+    # kidにマッチする公開鍵を探す
+    key = next((key for key in keys if key["kid"] == kid), None)
+    if key is None:
+        return {
+            "statusCode": 401,
+            "body": json.dumps({"message": "Public key not found"}),
+        }
+
+    try:
+        # 公開鍵を使用してトークンを検証
+        public_key = jwk.construct(key)
+        jwt.decode(
+            id_token,
+            public_key,
+            algorithms=["RS256"],
+            audience=APP_CLIENT_ID,
+            issuer=IDP_ISSUER,
+            access_token=tokens.get("access_token"),
+        )
+        return tokens
+    except ExpiredSignatureError:
+        print(e)
+        # 有効期限エラー
+        return None
+    except JWTError as e:
+        print(e)
+        # その他のJWTエラー（署名検証エラーなど）
+        return None

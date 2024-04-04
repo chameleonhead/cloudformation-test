@@ -16,21 +16,15 @@ BUCKET_NAME = os.environ["BUCKET_NAME"]
 PUBLIC_PREFIX = "public/"
 
 IDP_ISSUER = os.environ["IDP_ISSUER"]
-IDP_AUDIENCE = os.environ["IDP_AUDIENCE"]
 IDP_ISSUER_KEYS_URL = f"{IDP_ISSUER}/.well-known/jwks.json"
+APP_CLIENT_ID = os.environ["APP_CLIENT_ID"]
 
 
 def lambda_handler(event, context):
-    cookies = event.get("cookies", [])
-    for cookie_str in cookies:
-        c = http.cookies.SimpleCookie(cookie_str)
-        id_token = c.get("id_token").value if "id_token" in c else None
-        if id_token:
-            break
+    tokens = get_tokens(event)
     domain_name = event["requestContext"]["domainName"]
-    path = event.get(
-        "rawPath", event["requestContext"]["http"]["path"]
-    )  # HTTP API と REST API の両方に対応
+    path = event.get("rawPath", event["requestContext"]["http"]["path"])
+    # HTTP API と REST API の両方に対応
     query_string_parameters = event.get("queryStringParameters", {})
     query_string = event.get(
         "rawQueryString", urllib.parse.urlencode(query_string_parameters)
@@ -40,41 +34,8 @@ def lambda_handler(event, context):
     if query_string:
         request_url += f"?{query_string}"
 
-    if not id_token:
-        print("No id_token")
-        return redirect_to_login(request_url)
-
-    # JWKSから公開鍵を取得
-    keys = requests.get(IDP_ISSUER_KEYS_URL).json()["keys"]
-    headers = jwt.get_unverified_headers(id_token)
-    kid = headers["kid"]
-
-    # kidにマッチする公開鍵を探す
-    key = next((key for key in keys if key["kid"] == kid), None)
-    if key is None:
-        return {
-            "statusCode": 401,
-            "body": json.dumps({"message": "Public key not found"}),
-        }
-
-    try:
-        # 公開鍵を使用してトークンを検証
-        public_key = jwk.construct(key)
-        jwt.decode(
-            id_token,
-            public_key,
-            algorithms=["RS256"],
-            issuer=IDP_ISSUER,
-            audience=IDP_AUDIENCE,
-        )
-
-    except ExpiredSignatureError:
-        print(e)
-        # 有効期限エラー
-        return redirect_to_login(request_url)
-    except JWTError as e:
-        print(e)
-        # その他のJWTエラー（署名検証エラーなど）
+    if not tokens:
+        print("Redirect to login page")
         return redirect_to_login(request_url)
 
     path = event["rawPath"].lstrip("/")
@@ -84,6 +45,7 @@ def lambda_handler(event, context):
     s3_object_key = f"{PUBLIC_PREFIX}{path}"
     headers = event.get("headers", {})
 
+    print(f"S3 Key: {s3_object_key}")
     try:
         get_object_args = {}
         get_object_args["Bucket"] = BUCKET_NAME
@@ -143,7 +105,7 @@ def lambda_handler(event, context):
 
 
 def redirect_to_login(request_url):
-    login_page = f"/auth/login?redirect={urllib.parse.quote(request_url)}"
+    login_page = f"/auth/login?redirect={urllib.parse.quote_plus(request_url)}"
 
     return {
         "statusCode": 302,
@@ -162,3 +124,52 @@ def set_security_headers(headers):
         }
     )
     return headers
+
+
+def get_tokens(event):
+    cookies = event.get("cookies", [])
+    tokens = None
+    for cookie_str in cookies:
+        c = http.cookies.SimpleCookie(cookie_str)
+        tokens = c.get("tokens").value if "tokens" in c else None
+        if tokens:
+            tokens = json.loads(urllib.parse.unquote_plus(tokens))
+            break
+
+    if not tokens or not tokens.get("id_token"):
+        return None
+
+    id_token = tokens.get("id_token")
+    # JWKSから公開鍵を取得
+    keys = requests.get(IDP_ISSUER_KEYS_URL).json()["keys"]
+    headers = jwt.get_unverified_headers(id_token)
+    kid = headers["kid"]
+
+    # kidにマッチする公開鍵を探す
+    key = next((key for key in keys if key["kid"] == kid), None)
+    if key is None:
+        return {
+            "statusCode": 401,
+            "body": json.dumps({"message": "Public key not found"}),
+        }
+
+    try:
+        # 公開鍵を使用してトークンを検証
+        public_key = jwk.construct(key)
+        jwt.decode(
+            id_token,
+            public_key,
+            algorithms=["RS256"],
+            audience=APP_CLIENT_ID,
+            issuer=IDP_ISSUER,
+            access_token=tokens.get("access_token"),
+        )
+        return tokens
+    except ExpiredSignatureError:
+        print(e)
+        # 有効期限エラー
+        return None
+    except JWTError as e:
+        print(e)
+        # その他のJWTエラー（署名検証エラーなど）
+        return None
