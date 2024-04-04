@@ -7,9 +7,12 @@ Parameters:
   LambdaS3Bucket:
     Type: String
     Default: test-lambda-bucket-for-qs
-  LambdaS3Key:
+  LambdaS3KeyS3Proxy:
     Type: String
     Default: lambda-proxy.zip
+  LambdaS3KeyAuth:
+    Type: String
+    Default: lambda-auth.zip
 
 Resources:
   CognitoUserPool:
@@ -40,7 +43,7 @@ Resources:
         - aws.cognito.signin.user.admin
       AllowedOAuthFlowsUserPoolClient: true
       CallbackURLs:
-        - !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+        - !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/auth/callback"
       SupportedIdentityProviders:
         - "COGNITO"
 
@@ -92,7 +95,7 @@ Resources:
           - !Ref CognitoUserPoolClient
         Issuer: !Sub https://cognito-idp.${AWS::Region}.amazonaws.com/${CognitoUserPool}
 
-  LambdaFunction:
+  S3ProxyLambdaFunction:
     Type: AWS::Lambda::Function
     Properties:
       FunctionName: S3ProxyLambdaFunction
@@ -103,29 +106,26 @@ Resources:
           BUCKET_NAME: !Ref S3Bucket
           IDP_ISSUER: !Sub https://cognito-idp.${AWS::Region}.amazonaws.com/${CognitoUserPool}
           IDP_AUDIENCE: !Ref CognitoUserPool
-          IDP_LOGIN_PAGE: !Sub "https://${CognitoUserPoolDomain}.auth.${AWS::Region}.amazoncognito.com/login"
-          APP_CLIENT_ID: !GetAtt CognitoUserPoolClient.ClientId
-          APP_REDIRECT_URI: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com"
       Code:
         S3Bucket: !Ref LambdaS3Bucket
-        S3Key: !Ref LambdaS3Key
+        S3Key: !Ref LambdaS3KeyS3Proxy
       Role: !GetAtt LambdaExecutionRole.Arn
 
-  LambdaInvokePermission:
+  S3ProxyLambdaInvokePermission:
     Type: AWS::Lambda::Permission
     Properties:
       Action: lambda:InvokeFunction
-      FunctionName: !Ref LambdaFunction
+      FunctionName: !Ref S3ProxyLambdaFunction
       Principal: apigateway.amazonaws.com
       SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${HttpApi}/*/*
 
-  LambdaIntegration:
+  S3ProxyLambdaIntegration:
     Type: AWS::ApiGatewayV2::Integration
     Properties:
       ApiId: !Ref HttpApi
       Description: Integration for Lambda proxy
       IntegrationType: AWS_PROXY
-      IntegrationUri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaFunction.Arn}/invocations
+      IntegrationUri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${S3ProxyLambdaFunction.Arn}/invocations
       PayloadFormatVersion: "2.0"
 
   DefaultRoute:
@@ -133,7 +133,50 @@ Resources:
     Properties:
       ApiId: !Ref HttpApi
       RouteKey: "ANY /{proxy+}"
-      Target: !Sub "integrations/${LambdaIntegration}"
+      Target: !Sub "integrations/${S3ProxyLambdaIntegration}"
+
+  AuthLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: AuthLambdaFunction
+      Runtime: python3.10
+      Handler: index.lambda_handler
+      Environment:
+        Variables:
+          BUCKET_NAME: !Ref S3Bucket
+          IDP_ISSUER: !Sub https://cognito-idp.${AWS::Region}.amazonaws.com/${CognitoUserPool}
+          IDP_AUDIENCE: !Ref CognitoUserPool
+          IDP_URL: !Sub "https://${CognitoUserPoolDomain}.auth.${AWS::Region}.amazoncognito.com"
+          APP_CLIENT_ID: !GetAtt CognitoUserPoolClient.ClientId
+          APP_REDIRECT_URI: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/auth/callback"
+      Code:
+        S3Bucket: !Ref LambdaS3Bucket
+        S3Key: !Ref LambdaS3KeyAuth
+      Role: !GetAtt LambdaExecutionRole.Arn
+
+  AuthLambdaInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref AuthLambdaFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${HttpApi}/*/*
+
+  AuthLambdaIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref HttpApi
+      Description: Integration for Lambda proxy
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AuthLambdaFunction.Arn}/invocations
+      PayloadFormatVersion: "2.0"
+
+  AuthRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: "ANY /auth/{proxy+}"
+      Target: !Sub "integrations/${AuthLambdaIntegration}"
 
   Stage:
     Type: AWS::ApiGatewayV2::Stage

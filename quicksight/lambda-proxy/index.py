@@ -9,6 +9,7 @@ import os
 from jose import jwt, jwk, ExpiredSignatureError, JWTError
 import requests
 import urllib.parse
+import http.cookies
 
 s3 = boto3.client("s3")
 BUCKET_NAME = os.environ["BUCKET_NAME"]
@@ -17,19 +18,35 @@ PUBLIC_PREFIX = "public/"
 IDP_ISSUER = os.environ["IDP_ISSUER"]
 IDP_AUDIENCE = os.environ["IDP_AUDIENCE"]
 IDP_ISSUER_KEYS_URL = f"{IDP_ISSUER}/.well-known/jwks.json"
-IDP_LOGIN_PAGE = os.environ["IDP_LOGIN_PAGE"]
-APP_CLIENT_ID = os.environ["APP_CLIENT_ID"]
-APP_REDIRECT_URI = os.environ["APP_REDIRECT_URI"]
 
 
 def lambda_handler(event, context):
-    token = event.get("headers", {}).get("Authorization")
-    if not token:
-        return redirect_to_cognito()
+    cookies = event.get("cookies", [])
+    for cookie_str in cookies:
+        c = http.cookies.SimpleCookie(cookie_str)
+        id_token = c.get("id_token").value if "id_token" in c else None
+        if id_token:
+            break
+    domain_name = event["requestContext"]["domainName"]
+    path = event.get(
+        "rawPath", event["requestContext"]["http"]["path"]
+    )  # HTTP API と REST API の両方に対応
+    query_string_parameters = event.get("queryStringParameters", {})
+    query_string = event.get(
+        "rawQueryString", urllib.parse.urlencode(query_string_parameters)
+    )
+
+    request_url = f"https://{domain_name}{path}"
+    if query_string:
+        request_url += f"?{query_string}"
+
+    if not id_token:
+        print("No id_token")
+        return redirect_to_login(request_url)
 
     # JWKSから公開鍵を取得
     keys = requests.get(IDP_ISSUER_KEYS_URL).json()["keys"]
-    headers = jwt.get_unverified_headers(token)
+    headers = jwt.get_unverified_headers(id_token)
     kid = headers["kid"]
 
     # kidにマッチする公開鍵を探す
@@ -44,7 +61,7 @@ def lambda_handler(event, context):
         # 公開鍵を使用してトークンを検証
         public_key = jwk.construct(key)
         jwt.decode(
-            token,
+            id_token,
             public_key,
             algorithms=["RS256"],
             issuer=IDP_ISSUER,
@@ -54,11 +71,11 @@ def lambda_handler(event, context):
     except ExpiredSignatureError:
         print(e)
         # 有効期限エラー
-        return redirect_to_cognito()
+        return redirect_to_login(request_url)
     except JWTError as e:
         print(e)
         # その他のJWTエラー（署名検証エラーなど）
-        return redirect_to_cognito()
+        return redirect_to_login(request_url)
 
     path = event["rawPath"].lstrip("/")
     if path.endswith("/") or not path:
@@ -125,16 +142,12 @@ def lambda_handler(event, context):
     return response
 
 
-def redirect_to_cognito():
-    login_page = f"{IDP_LOGIN_PAGE}"
-    login_page += f"?response_type=code"
-    login_page += f"&client_id={APP_CLIENT_ID}"
-    login_page += f"&redirect_uri={urllib.parse.quote(APP_REDIRECT_URI)}"
-    login_page += f"&scope=openid+profile+email"
+def redirect_to_login(request_url):
+    login_page = f"/auth/login?redirect={urllib.parse.quote(request_url)}"
 
     return {
         "statusCode": 302,
-        "headers": {"Location": login_page},
+        "headers": set_security_headers({"Location": login_page}),
         "body": json.dumps({"message": "Redirecting to authentication page..."}),
     }
 
