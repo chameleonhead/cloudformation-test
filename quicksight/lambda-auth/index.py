@@ -72,10 +72,57 @@ def lambda_handler(event, context):
     tokens = get_tokens(event)
 
     if path == "/auth/login":
-        if tokens:
-            return redirect_to(query_string_parameters.get("redirect"))
-        else:
+        if not tokens:
             return redirect_to_cognito(query_string_parameters.get("redirect"))
+        return redirect_to(query_string_parameters.get("redirect"))
+    elif path == "/auth/token":
+        if not tokens:
+            return {
+                "statusCode": 401,
+                "headers": set_security_headers({}),
+                "body": json.dumps({"message": "Unauthorized"}),
+            }
+        return {
+            "statusCode": 200,
+            "headers": set_security_headers({}),
+            "body": json.dumps(tokens),
+        }
+    elif path == "/auth/refresh":
+        if not tokens:
+            return {
+                "statusCode": 401,
+                "headers": set_security_headers({}),
+                "body": json.dumps({"message": "Unauthorized"}),
+            }
+
+        # Cognitoにトークンを要求
+        headers = {"Content-type": "application/x-www-form-urlencoded"}
+        body = {
+            "grant_type": "refresh_token",
+            "refresh_token": code,
+        }
+
+        response = requests.post(
+            f"{IDP_URL}/oauth2/token",
+            data=body,
+            headers=headers,
+            auth=(APP_CLIENT_ID, APP_CLIENT_SECRET),
+        )
+        if response.status_code == 200:
+            # トークンの取得に成功した場合
+            tokens = response.json()
+            print(tokens)
+
+            # トークンをクッキーに設定してリダイレクト
+            headers = {
+                "Location": original_page if original_page else "/",
+                "Set-Cookie": f"tokens={urllib.parse.quote_plus(json.dumps(tokens))}; Secure; HttpOnly; Path=/",
+            }
+            return {
+                "statusCode": 302,
+                "headers": set_security_headers(headers),
+                "body": "",
+            }
     else:
         return {
             "statusCode": 404,

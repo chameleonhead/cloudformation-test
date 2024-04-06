@@ -4,36 +4,38 @@ import os
 
 ACCOUNT_ID = os.environ["ACCOUNT_ID"]
 QUICKSIGHT_NAMESPACE = os.environ["QUICKSIGHT_NAMESPACE"]
-QUICKSIGHT_USER_ROLE_NAME = os.environ["QUICKSIGHT_USER_ROLE_NAME"]
 
 
 def lambda_handler(event, context):
     # Cognitoユーザー情報の取得（ここでは例としてEメールを使用）
-    email = event["requestContext"]["authorizer"]["claims"]["email"]
-    print(event)
+    user_name = event["requestContext"]["authorizer"]["jwt"]["claims"]["sub"]
+    email = event["requestContext"]["authorizer"]["jwt"]["claims"]["username"]
 
     # QuickSightクライアントの作成
     quicksight_client = boto3.client("quicksight")
     account_id = ACCOUNT_ID
     namespace = QUICKSIGHT_NAMESPACE
-    quicksight_role_name = QUICKSIGHT_USER_ROLE_NAME
 
     # QuickSightにユーザーが存在するかどうかを確認
-    users = quicksight_client.list_users(AwsAccountId=account_id, Namespace=namespace)
-    user_exists = any(
-        user for user in users["UserList"] if user["EmailAddress"] == email
-    )
+    try:
+        user = quicksight_client.describe_user(
+            AwsAccountId=account_id,
+            Namespace=namespace,
+            UserName=user_name,
+        )
+        print(user)
+    except Exception as e:
+        user = None
 
     # ユーザーが存在しない場合は新規作成
-    if not user_exists:
+    if not user:
         quicksight_client.register_user(
             AwsAccountId=account_id,
             Namespace=namespace,
             IdentityType="IAM",
             Email=email,
             UserRole="READER",
-            IamArn=f"arn:aws:iam::{account_id}:role/{quicksight_role_name}",
-            SessionName=email,  # QuickSightのユーザー名やEメールなど、一意のセッション名を設定
+            UserName=user_name,
         )
 
     # QuickSightの埋め込みURLを取得
@@ -41,7 +43,7 @@ def lambda_handler(event, context):
         AwsAccountId=account_id,
         EntryPoint="/start",
         SessionLifetimeInMinutes=15,
-        UserArn=f"arn:aws:quicksight:{account_id}:user/{namespace}/{email}",
+        UserArn=f"arn:aws:quicksight:{account_id}:user/{namespace}/{user_name}",
     )
 
     # 埋め込みURLをレスポンスとして返却

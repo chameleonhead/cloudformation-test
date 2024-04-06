@@ -74,6 +74,19 @@ Resources:
                 Action:
                   - s3:GetObject
                 Resource: !Sub "arn:aws:s3:::${S3Bucket}/*"
+        - PolicyName: LambdaQuickSightAccessPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - quicksight:ListUsers
+                  - quicksight:RegisterUser
+                Resource: !Sub "arn:aws:quicksight:*:${AWS::AccountId}:user/default/*"
+              - Effect: Allow
+                Action:
+                  - quicksight:GetSessionEmbedUrl
+                Resource: "*"
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Path: "/"
@@ -188,11 +201,8 @@ Resources:
       Handler: index.lambda_handler
       Environment:
         Variables:
-          BUCKET_NAME: !Ref S3Bucket
-          IDP_ISSUER: !Sub https://cognito-idp.${AWS::Region}.amazonaws.com/${CognitoUserPool}
-          IDP_URL: !Sub "https://${CognitoUserPoolDomain}.auth.${AWS::Region}.amazoncognito.com"
-          APP_CLIENT_ID: !GetAtt CognitoUserPoolClient.ClientId
-          APP_REDIRECT_URI: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/auth/callback"
+          ACCOUNT_ID: !Ref AWS::AccountId
+          QUICKSIGHT_NAMESPACE: default
       Code:
         S3Bucket: !Ref LambdaS3Bucket
         S3Key: !Ref LambdaS3KeyQuickSightApi

@@ -4,7 +4,6 @@ import os
 
 os.environ["ACCOUNT_ID"] = "YOUR_ACCOUNT_ID"
 os.environ["QUICKSIGHT_NAMESPACE"] = "default"
-os.environ["QUICKSIGHT_USER_ROLE_NAME"] = "QUICKSIGHT_USER_ROLE_NAME"
 from index import lambda_handler
 
 
@@ -26,7 +25,13 @@ class TestLambdaFunction(unittest.TestCase):
 
         # イベントの準備
         event = {
-            "requestContext": {"authorizer": {"claims": {"email": "test@example.com"}}}
+            "requestContext": {
+                "authorizer": {
+                    "jwt": {
+                        "claims": {"sub": "USER_ID", "username": "test@example.com"}
+                    }
+                }
+            }
         }
 
         # ハンドラの呼び出し
@@ -45,7 +50,7 @@ class TestLambdaFunction(unittest.TestCase):
             AwsAccountId="YOUR_ACCOUNT_ID",
             EntryPoint="/start",
             SessionLifetimeInMinutes=15,
-            UserArn="arn:aws:quicksight:YOUR_ACCOUNT_ID:user/default/test@example.com",
+            UserArn="arn:aws:quicksight:YOUR_ACCOUNT_ID:user/default/USER_ID",
         )
 
     @patch("boto3.client")
@@ -62,7 +67,13 @@ class TestLambdaFunction(unittest.TestCase):
 
         # イベントの準備
         event = {
-            "requestContext": {"authorizer": {"claims": {"email": "test@example.com"}}}
+            "requestContext": {
+                "authorizer": {
+                    "jwt": {
+                        "claims": {"sub": "USER_ID", "username": "test@example.com"}
+                    }
+                }
+            }
         }
 
         # ハンドラの呼び出し
@@ -83,14 +94,13 @@ class TestLambdaFunction(unittest.TestCase):
             IdentityType="IAM",
             Email="test@example.com",
             UserRole="READER",
-            IamArn="arn:aws:iam::YOUR_ACCOUNT_ID:role/QUICKSIGHT_USER_ROLE_NAME",
-            SessionName="test@example.com",
+            UserName="USER_ID",
         )
         mock_client_instance.get_session_embed_url.assert_called_once_with(
             AwsAccountId="YOUR_ACCOUNT_ID",
             EntryPoint="/start",
             SessionLifetimeInMinutes=15,
-            UserArn="arn:aws:quicksight:YOUR_ACCOUNT_ID:user/default/test@example.com",
+            UserArn="arn:aws:quicksight:YOUR_ACCOUNT_ID:user/default/USER_ID",
         )
 
 
