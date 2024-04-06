@@ -165,7 +165,7 @@ def get_tokens(event):
             access_token=tokens.get("access_token"),
         )
         return tokens
-    except ExpiredSignatureError:
+    except ExpiredSignatureError as e:
         print(e)
         # 有効期限エラー
         return None

@@ -132,7 +132,6 @@ def get_tokens(event):
     # JWKSから公開鍵を取得
     keys = requests.get(IDP_ISSUER_KEYS_URL).json()["keys"]
     headers = jwt.get_unverified_headers(id_token)
-    print(jwt.get_unverified_claims(id_token))
     kid = headers["kid"]
 
     # kidにマッチする公開鍵を探す
@@ -155,7 +154,7 @@ def get_tokens(event):
             access_token=tokens.get("access_token"),
         )
         return tokens
-    except ExpiredSignatureError:
+    except ExpiredSignatureError as e:
         print(e)
         # 有効期限エラー
         return None

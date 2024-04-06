@@ -13,6 +13,9 @@ Parameters:
   LambdaS3KeyAuth:
     Type: String
     Default: lambda-auth.zip
+  LambdaS3KeyQuickSightApi:
+    Type: String
+    Default: lambda-quicksight.zip
 
 Resources:
   CognitoUserPool:
@@ -176,6 +179,50 @@ Resources:
       ApiId: !Ref HttpApi
       RouteKey: "ANY /auth/{proxy+}"
       Target: !Sub "integrations/${AuthLambdaIntegration}"
+
+  QuickSightApiLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: QuickSightApiLambdaFunction
+      Runtime: python3.10
+      Handler: index.lambda_handler
+      Environment:
+        Variables:
+          BUCKET_NAME: !Ref S3Bucket
+          IDP_ISSUER: !Sub https://cognito-idp.${AWS::Region}.amazonaws.com/${CognitoUserPool}
+          IDP_URL: !Sub "https://${CognitoUserPoolDomain}.auth.${AWS::Region}.amazoncognito.com"
+          APP_CLIENT_ID: !GetAtt CognitoUserPoolClient.ClientId
+          APP_REDIRECT_URI: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/auth/callback"
+      Code:
+        S3Bucket: !Ref LambdaS3Bucket
+        S3Key: !Ref LambdaS3KeyQuickSightApi
+      Role: !GetAtt LambdaExecutionRole.Arn
+
+  QuickSightApiLambdaInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref QuickSightApiLambdaFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${HttpApi}/*/*
+
+  QuickSightApiLambdaIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref HttpApi
+      Description: Integration for Lambda proxy
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${QuickSightApiLambdaFunction.Arn}/invocations
+      PayloadFormatVersion: "2.0"
+
+  QuickSightApiRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: "ANY /api/quicksight/{proxy+}"
+      Target: !Sub "integrations/${QuickSightApiLambdaIntegration}"
+      AuthorizationType: JWT
+      AuthorizerId: !Ref CognitoAuthorizer
 
   Stage:
     Type: AWS::ApiGatewayV2::Stage
