@@ -23,5 +23,10 @@ cd ..
 
 aws cloudformation update-stack --stack-name quicksight-app --template-body file://quicksight-app.yml --capabilities CAPABILITY_NAMED_IAM --parameters ParameterKey=LambdaS3KeyS3Proxy,ParameterValue=lambda-proxy-$v.zip ParameterKey=LambdaS3KeyAuth,ParameterValue=lambda-auth-$v.zip ParameterKey=LambdaS3KeyQuickSightApi,ParameterValue=lambda-quicksight-api-$v.zip
 
-aws s3 cp --recursive public/ s3://test-spa-app-with-qs/public/
-
+cd app
+if [ ! -d node_modules ]; then
+    npm run install
+fi
+npm run build
+aws s3 sync dist/ s3://test-spa-app-with-qs/public/ 
+cd ..
