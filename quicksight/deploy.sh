@@ -28,5 +28,5 @@ if [ ! -d node_modules ]; then
     npm run install
 fi
 npm run build
-aws s3 sync dist/ s3://test-spa-app-with-qs/public/ 
+aws s3 sync dist/ s3://test-spa-app-with-qs/public/
 cd ..

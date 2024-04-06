@@ -1,35 +1,82 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React, { useEffect, useState } from "react";
+import Navbar from "./components/Navbar";
+import QuickSightEmbed from "./components/QuickSightEmbed";
+import ErrorDialog from "./components/ErrorDialog";
+import { Container } from "@mui/material";
+import { useAuthContext } from "./context/AuthContext";
 
-function App() {
-  const [count, setCount] = useState(0)
+const App: React.FC = () => {
+  const { token } = useAuthContext();
+  const [embedUrl, setEmbedUrl] = useState<string>("");
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isNetworkErrorOpen, setNetworkErrorOpen] = useState(false);
+  const [isAuthErrorOpen, setAuthErrorOpen] = useState(false);
+
+  // QuickSightの埋め込みURLを非同期で取得する仮の関数
+  const fetchQuickSightEmbedUrl = async () => {
+    // ここで実際のAPI呼び出しを行い、埋め込みURLを取得する
+    // この例では固定のURLを使用
+    setIsLoading(true);
+    try {
+      const result = await fetch("/api/quicksight/embed-url", {
+        headers: {
+          Authorization: "Bearer " + token,
+        },
+      });
+      const data = await result.json();
+      console.log(data);
+      setEmbedUrl(data.embedUrl);
+    } catch (e) {
+      setNetworkErrorOpen(true);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (token) {
+      fetchQuickSightEmbedUrl();
+    }
+  }, [token]);
+
+  const handleLogout = () => {
+    console.log("ログアウト処理");
+    // ここにログアウト処理を実装
+  };
+
+  if (!token) {
+    return <div>Loading...</div>;
+  }
+
+  // // エラーハンドリング関数
+  // const handleNetworkError = () => {
+  //   setNetworkErrorOpen(true);
+  // };
+
+  // const handleAuthError = () => {
+  //   setAuthErrorOpen(true);
+  // };
 
   return (
-    <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
-}
+    <div>
+      <Navbar onLogout={handleLogout} />
+      <Container>
+        {isLoading ? "Loading" : <QuickSightEmbed embedUrl={embedUrl} />}
+      </Container>
+      <ErrorDialog
+        open={isNetworkErrorOpen}
+        errorMessage="ネットワークエラーが発生しました。再試行してください。"
+        onOk={() => setNetworkErrorOpen(false)}
+        onClose={() => setNetworkErrorOpen(false)}
+      />
+      <ErrorDialog
+        open={isAuthErrorOpen}
+        errorMessage="認証エラーが発生しました。ページをリロードしてください。"
+        onOk={() => window.location.reload()}
+        onClose={() => setAuthErrorOpen(false)}
+      />
+    </div>
+  );
+};
 
-export default App
+export default App;
