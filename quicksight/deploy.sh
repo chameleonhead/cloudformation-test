@@ -1,5 +1,5 @@
 #/bin/bash -e
-v=10
+v=2
 
 cd lambda-proxy
 pip3 install --platform=manylinux2014_x86_64 --implementation=cp --target=python --only-binary=:all: --upgrade python-jose requests
@@ -20,7 +20,7 @@ cd ..
 
 cd app
 if [ ! -d node_modules ]; then
-    npm run install
+    npm install
 fi
 npm run build
 cd ..

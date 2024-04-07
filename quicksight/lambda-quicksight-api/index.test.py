@@ -1,9 +1,11 @@
+import botocore.exceptions
 import unittest
 from unittest.mock import MagicMock, patch
 import os
 
 os.environ["ACCOUNT_ID"] = "YOUR_ACCOUNT_ID"
 os.environ["QUICKSIGHT_NAMESPACE"] = "default"
+os.environ["QUICKSIGHT_USER_ROLE"] = "QUICKSIGHT_USER_ROLE"
 from index import lambda_handler
 
 
@@ -16,9 +18,7 @@ class TestLambdaFunction(unittest.TestCase):
         mock_quicksight_client.return_value = mock_client_instance
 
         # モックの応答設定
-        mock_client_instance.list_users.return_value = {
-            "UserList": [{"EmailAddress": "test@example.com"}]
-        }
+        mock_client_instance.describe_user.return_value = {"User": {"Arn": "USER_ARN"}}
         mock_client_instance.get_session_embed_url.return_value = {
             "EmbedUrl": "YOUR_EMBED_URL"
         }
@@ -43,14 +43,16 @@ class TestLambdaFunction(unittest.TestCase):
 
         # QuickSightクライアントが適切に呼び出されたかを確認
         mock_quicksight_client.assert_called_once()
-        mock_client_instance.list_users.assert_called_once_with(
-            AwsAccountId="YOUR_ACCOUNT_ID", Namespace="default"
+        mock_client_instance.describe_user.assert_called_once_with(
+            AwsAccountId="YOUR_ACCOUNT_ID",
+            Namespace="default",
+            UserName="QUICKSIGHT_USER_ROLE/USER_ID",
         )
         mock_client_instance.get_session_embed_url.assert_called_once_with(
             AwsAccountId="YOUR_ACCOUNT_ID",
             EntryPoint="/start",
             SessionLifetimeInMinutes=15,
-            UserArn="arn:aws:quicksight:YOUR_ACCOUNT_ID:user/default/USER_ID",
+            UserArn="USER_ARN",
         )
 
     @patch("boto3.client")
@@ -60,7 +62,12 @@ class TestLambdaFunction(unittest.TestCase):
         mock_quicksight_client.return_value = mock_client_instance
 
         # モックの応答設定（ユーザーが存在しない状態）
-        mock_client_instance.list_users.return_value = {"UserList": []}
+        mock_client_instance.describe_user.side_effect = (
+            botocore.exceptions.ClientError(
+                {"Error": {"Code": "404", "Message": "404 Message"}}, "DescribeUser"
+            )
+        )
+        mock_client_instance.register_user.return_value = {"User": {"Arn": "USER_ARN"}}
         mock_client_instance.get_session_embed_url.return_value = {
             "EmbedUrl": "YOUR_EMBED_URL"
         }
@@ -85,22 +92,25 @@ class TestLambdaFunction(unittest.TestCase):
 
         # QuickSightクライアントが適切に呼び出されたかを確認
         mock_quicksight_client.assert_called_once()
-        mock_client_instance.list_users.assert_called_once_with(
-            AwsAccountId="YOUR_ACCOUNT_ID", Namespace="default"
+        mock_client_instance.describe_user.assert_called_once_with(
+            AwsAccountId="YOUR_ACCOUNT_ID",
+            Namespace="default",
+            UserName="QUICKSIGHT_USER_ROLE/USER_ID",
         )
         mock_client_instance.register_user.assert_called_once_with(
             AwsAccountId="YOUR_ACCOUNT_ID",
             Namespace="default",
             IdentityType="IAM",
-            Email="test@example.com",
+            IamArn="arn:aws:iam::YOUR_ACCOUNT_ID:role/QUICKSIGHT_USER_ROLE",
+            SessionName="USER_ID",
             UserRole="READER",
-            UserName="USER_ID",
+            Email="test@example.com",
         )
         mock_client_instance.get_session_embed_url.assert_called_once_with(
             AwsAccountId="YOUR_ACCOUNT_ID",
             EntryPoint="/start",
             SessionLifetimeInMinutes=15,
-            UserArn="arn:aws:quicksight:YOUR_ACCOUNT_ID:user/default/USER_ID",
+            UserArn="USER_ARN",
         )
 
 
