@@ -16,7 +16,7 @@ class TestLambdaFunction(unittest.TestCase):
     def test_auth_callback_with_no_code(self, mock_post):
         """認証コードがない場合、400 Bad Requestを返すことをテストする"""
         event = {
-            "requestContext": {"http": {"path": "/auth/callback"}},
+            "rawPath": "/auth/callback",
             "queryStringParameters": {},
         }
         response = lambda_handler(event, {})
@@ -32,7 +32,7 @@ class TestLambdaFunction(unittest.TestCase):
         mock_post.return_value = mock_response
 
         event = {
-            "requestContext": {"http": {"path": "/auth/callback"}},
+            "rawPath": "/auth/callback",
             "queryStringParameters": {"code": "invalid_code"},
         }
         response = lambda_handler(event, {})
@@ -53,7 +53,7 @@ class TestLambdaFunction(unittest.TestCase):
         mock_post.return_value = mock_response
 
         event = {
-            "requestContext": {"http": {"path": "/auth/callback"}},
+            "rawPath": "/auth/callback",
             "queryStringParameters": {"code": "valid_code"},
         }
         response = lambda_handler(event, {})
@@ -65,8 +65,8 @@ class TestLambdaFunction(unittest.TestCase):
     def test_auth_login_redirect(self):
         """'/auth/login'へのアクセス時に、Cognitoのログインページへ正しくリダイレクトする"""
         event = {
+            "rawPath": "/auth/login",
             "requestContext": {
-                "http": {"path": "/auth/login"},
                 "domainName": "example.com",
             },
             "queryStringParameters": {"redirect": "https://redirect-page.com"},
@@ -84,6 +84,22 @@ class TestLambdaFunction(unittest.TestCase):
         self.assertIn(
             "state=https%3A%2F%2Fredirect-page.com", response["headers"]["Location"]
         )
+
+    # トークン検証をテスト
+    def test_token_without_cookie(self):
+        event = {
+            "rawPath": "/auth/token",
+        }
+        result = lambda_handler(event, None)
+        self.assertEqual(result["statusCode"], 400)
+
+    # トークンリフレッシュをテスト
+    def test_refresh_without_cookie(self):
+        event = {
+            "rawPath": "/auth/refresh",
+        }
+        result = lambda_handler(event, None)
+        self.assertEqual(result["statusCode"], 400)
 
 
 if __name__ == "__main__":

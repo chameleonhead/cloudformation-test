@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import Navbar from "./components/Navbar";
 import QuickSightEmbed from "./components/QuickSightEmbed";
 import ErrorDialog from "./components/ErrorDialog";
@@ -13,7 +13,7 @@ const App: React.FC = () => {
   const [isAuthErrorOpen, setAuthErrorOpen] = useState(false);
 
   // QuickSightの埋め込みURLを非同期で取得する仮の関数
-  const fetchQuickSightEmbedUrl = async () => {
+  const fetchQuickSightEmbedUrl = useCallback(async () => {
     // ここで実際のAPI呼び出しを行い、埋め込みURLを取得する
     // この例では固定のURLを使用
     setIsLoading(true);
@@ -31,13 +31,13 @@ const App: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [token, setIsLoading, setEmbedUrl, setNetworkErrorOpen]);
 
   useEffect(() => {
     if (token) {
       fetchQuickSightEmbedUrl();
     }
-  }, [token]);
+  }, [token, fetchQuickSightEmbedUrl]);
 
   const handleLogout = () => {
     console.log("ログアウト処理");

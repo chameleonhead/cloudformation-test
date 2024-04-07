@@ -23,12 +23,8 @@ APP_CLIENT_ID = os.environ["APP_CLIENT_ID"]
 def lambda_handler(event, context):
     tokens = get_tokens(event)
     domain_name = event["requestContext"]["domainName"]
-    path = event.get("rawPath", event["requestContext"]["http"]["path"])
-    # HTTP API と REST API の両方に対応
-    query_string_parameters = event.get("queryStringParameters", {})
-    query_string = event.get(
-        "rawQueryString", urllib.parse.urlencode(query_string_parameters)
-    )
+    path = event.get("rawPath", "")
+    query_string = event.get("rawQueryString")
 
     request_url = f"https://{domain_name}{path}"
     if query_string:
@@ -38,7 +34,7 @@ def lambda_handler(event, context):
         print("Redirect to login page")
         return redirect_to_login(request_url)
 
-    path = event["rawPath"].lstrip("/")
+    path = path.lstrip("/")
     if path.endswith("/") or not path:
         path += "index.html"
 

@@ -10,12 +10,21 @@ interface TokenResponse {
 
 const getTokenFromAPI = async () => {
   const result = await fetch("/auth/token");
+  if (result.status !== 200) {
+    throw new Error("failed to fetch refreshed token")
+  }
   const data = await result.json();
   return data as TokenResponse;
 };
 
 const refreshAccessToken = async () => {
   const result = await fetch("/auth/refresh");
+  if (result.status === 304) {
+    return null;
+  }
+  if (result.status !== 200) {
+    throw new Error("failed to fetch refreshed token")
+  }
   const data = await result.json();
   return data as TokenResponse;
 };
@@ -37,7 +46,9 @@ const useAuth = () => {
     const intervalId = setInterval(async () => {
       // トークンのリフレッシュ処理
       const refreshedToken = await refreshAccessToken();
-      setToken(refreshedToken);
+      if (refreshedToken !== null) {
+        setToken(refreshedToken);
+      }
     }, TOKEN_REFRESH_INTERVAL);
 
     return () => clearInterval(intervalId);

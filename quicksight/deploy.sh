@@ -1,5 +1,5 @@
 #/bin/bash -e
-v=2
+v=6
 
 cd lambda-proxy
 pip3 install --platform=manylinux2014_x86_64 --implementation=cp --target=python --only-binary=:all: --upgrade python-jose requests
