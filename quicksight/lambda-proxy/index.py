@@ -1,15 +1,15 @@
 import sys
-
-sys.path.append("./python")
 import boto3
 from botocore.exceptions import ClientError
 import json
 from datetime import datetime
 import os
-from jose import jwt, jwk, ExpiredSignatureError, JWTError
-import requests
 import urllib.parse
 import http.cookies
+
+sys.path.append("./python")
+from jose import jwt, jwk, ExpiredSignatureError, JWTError
+import requests
 
 s3 = boto3.client("s3")
 BUCKET_NAME = os.environ["BUCKET_NAME"]
@@ -115,7 +115,7 @@ def set_security_headers(headers):
         {
             "X-Content-Type-Options": "nosniff",
             "X-Frame-Options": "DENY",
-            "Content-Security-Policy": "default-src 'self'; script-src 'self'; object-src 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self';",
+            "Content-Security-Policy": "default-src *; script-src * 'unsafe-inline'; connect-src * 'unsafe-inline'; img-src * data: blob: 'unsafe-inline'; frame-src *; style-src * 'unsafe-inline';",
             "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload",
         }
     )

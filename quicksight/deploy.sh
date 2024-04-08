@@ -1,5 +1,5 @@
 #/bin/bash -e
-v=6
+v=8
 
 cd lambda-proxy
 pip3 install --platform=manylinux2014_x86_64 --implementation=cp --target=python --only-binary=:all: --upgrade python-jose requests
@@ -14,6 +14,7 @@ zip -q lambda-auth.zip index.py -r python
 cd ..
 
 cd lambda-quicksight-api
+pip3 install --platform=manylinux2014_x86_64 --implementation=cp --target=python --only-binary=:all: --upgrade requests
 python3 index.test.py
 zip -q lambda-quicksight-api.zip index.py -r python
 cd ..

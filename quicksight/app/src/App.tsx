@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useState } from "react";
 import Navbar from "./components/Navbar";
 import QuickSightEmbed from "./components/QuickSightEmbed";
 import ErrorDialog from "./components/ErrorDialog";
-import { Container } from "@mui/material";
 import { useAuthContext } from "./context/AuthContext";
 
 const App: React.FC = () => {
@@ -44,10 +43,6 @@ const App: React.FC = () => {
     // ここにログアウト処理を実装
   };
 
-  if (!token) {
-    return <div>Loading...</div>;
-  }
-
   // // エラーハンドリング関数
   // const handleNetworkError = () => {
   //   setNetworkErrorOpen(true);
@@ -60,9 +55,7 @@ const App: React.FC = () => {
   return (
     <div>
       <Navbar onLogout={handleLogout} />
-      <Container>
         {isLoading ? "Loading" : <QuickSightEmbed embedUrl={embedUrl} />}
-      </Container>
       <ErrorDialog
         open={isNetworkErrorOpen}
         errorMessage="ネットワークエラーが発生しました。再試行してください。"

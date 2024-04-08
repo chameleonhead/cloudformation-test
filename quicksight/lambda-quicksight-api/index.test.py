@@ -3,6 +3,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 import os
 
+os.environ["IDP_URL"] = "https://idp.example.com"
 os.environ["ACCOUNT_ID"] = "YOUR_ACCOUNT_ID"
 os.environ["QUICKSIGHT_NAMESPACE"] = "default"
 os.environ["QUICKSIGHT_USER_ROLE"] = "QUICKSIGHT_USER_ROLE"
@@ -19,19 +20,23 @@ class TestLambdaFunction(unittest.TestCase):
 
         # モックの応答設定
         mock_client_instance.describe_user.return_value = {"User": {"Arn": "USER_ARN"}}
-        mock_client_instance.get_session_embed_url.return_value = {
+        mock_client_instance.generate_embed_url_for_registered_user.return_value = {
             "EmbedUrl": "YOUR_EMBED_URL"
         }
 
         # イベントの準備
         event = {
+            "headers": {
+                "referer": "https://DOMAIN_NAME",
+                "host": "HOST_NAME",
+            },
             "requestContext": {
                 "authorizer": {
                     "jwt": {
                         "claims": {"sub": "USER_ID", "username": "test@example.com"}
                     }
-                }
-            }
+                },
+            },
         }
 
         # ハンドラの呼び出し
@@ -48,18 +53,29 @@ class TestLambdaFunction(unittest.TestCase):
             Namespace="default",
             UserName="QUICKSIGHT_USER_ROLE/USER_ID",
         )
-        mock_client_instance.get_session_embed_url.assert_called_once_with(
+        mock_client_instance.generate_embed_url_for_registered_user.assert_called_once_with(
             AwsAccountId="YOUR_ACCOUNT_ID",
-            EntryPoint="/start",
             SessionLifetimeInMinutes=15,
             UserArn="USER_ARN",
+            ExperienceConfiguration={
+                "QuickSightConsole": {
+                    "InitialPath": "/start",
+                    "FeatureConfigurations": {"StatePersistence": {"Enabled": True}},
+                },
+            },
+            AllowedDomains=["https://DOMAIN_NAME"],
         )
 
+    @patch("requests.get")
     @patch("boto3.client")
-    def test_lambda_handler_user_does_not_exist(self, mock_quicksight_client):
+    def test_lambda_handler_user_does_not_exist(
+        self, mock_quicksight_client, mock_requests_get
+    ):
         # モックの設定
         mock_client_instance = MagicMock()
         mock_quicksight_client.return_value = mock_client_instance
+        mock_get_response = MagicMock()
+        mock_requests_get.return_value = mock_get_response
 
         # モックの応答設定（ユーザーが存在しない状態）
         mock_client_instance.describe_user.side_effect = (
@@ -67,20 +83,22 @@ class TestLambdaFunction(unittest.TestCase):
                 {"Error": {"Code": "404", "Message": "404 Message"}}, "DescribeUser"
             )
         )
+        mock_get_response.json.return_value = {"email": "test@example.com"}
         mock_client_instance.register_user.return_value = {"User": {"Arn": "USER_ARN"}}
-        mock_client_instance.get_session_embed_url.return_value = {
+        mock_client_instance.generate_embed_url_for_registered_user.return_value = {
             "EmbedUrl": "YOUR_EMBED_URL"
         }
 
         # イベントの準備
         event = {
+            "headers": {
+                "authorization": "AUTHORIZATION_HEADER",
+                "referer": "https://DOMAIN_NAME/path",
+                "host": "HOST_NAME",
+            },
             "requestContext": {
-                "authorizer": {
-                    "jwt": {
-                        "claims": {"sub": "USER_ID", "username": "test@example.com"}
-                    }
-                }
-            }
+                "authorizer": {"jwt": {"claims": {"sub": "USER_ID"}}},
+            },
         }
 
         # ハンドラの呼び出し
@@ -96,6 +114,10 @@ class TestLambdaFunction(unittest.TestCase):
             AwsAccountId="YOUR_ACCOUNT_ID",
             Namespace="default",
             UserName="QUICKSIGHT_USER_ROLE/USER_ID",
+        )
+        mock_requests_get.assert_called_once_with(
+            "https://idp.example.com/oauth2/userInfo",
+            headers={"Authorization": "AUTHORIZATION_HEADER"},
         )
         mock_client_instance.register_user.assert_called_once_with(
             AwsAccountId="YOUR_ACCOUNT_ID",
@@ -106,11 +128,17 @@ class TestLambdaFunction(unittest.TestCase):
             UserRole="READER",
             Email="test@example.com",
         )
-        mock_client_instance.get_session_embed_url.assert_called_once_with(
+        mock_client_instance.generate_embed_url_for_registered_user.assert_called_once_with(
             AwsAccountId="YOUR_ACCOUNT_ID",
-            EntryPoint="/start",
             SessionLifetimeInMinutes=15,
             UserArn="USER_ARN",
+            ExperienceConfiguration={
+                "QuickSightConsole": {
+                    "InitialPath": "/start",
+                    "FeatureConfigurations": {"StatePersistence": {"Enabled": True}},
+                },
+            },
+            AllowedDomains=["https://DOMAIN_NAME"],
         )
 
 

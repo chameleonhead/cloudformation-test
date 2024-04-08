@@ -83,11 +83,13 @@ Resources:
                   - quicksight:DescribeUser
                   - quicksight:RegisterUser
                   - quicksight:GetAuthCode
+                  - quicksight:GenerateEmbedUrlForRegisteredUser
                 Resource: !Sub "arn:aws:quicksight:*:${AWS::AccountId}:user/*"
-              - Effect: Allow
-                Action:
-                  - quicksight:GetSessionEmbedUrl
-                Resource: "*"
+              # - Effect: Allow
+              #   Action:
+              #     - quicksight:GetSessionEmbedUrl
+              #     - quicksight:GenerateEmbedUrlForRegisteredUser
+              #   Resource: "*"
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Path: "/"
@@ -229,6 +231,7 @@ Resources:
       Handler: index.lambda_handler
       Environment:
         Variables:
+          IDP_URL: !Sub "https://${CognitoUserPoolDomain}.auth.${AWS::Region}.amazoncognito.com"
           ACCOUNT_ID: !Ref AWS::AccountId
           QUICKSIGHT_NAMESPACE: default
           QUICKSIGHT_USER_ROLE: !Ref QuickSightUserRole
