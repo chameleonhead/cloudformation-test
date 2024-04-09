@@ -49,7 +49,6 @@ def lambda_handler(event, context):
     # ユーザーが存在しない場合は新規作成
     if not user:
         authorization = event["headers"]["authorization"]
-        print(authorization)
         headers = {
             "Authorization": authorization,
         }
